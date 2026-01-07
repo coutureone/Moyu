@@ -93,6 +93,8 @@ iOSInjectionProject/
 .DS_Store
 .AppleDouble
 .LSOverride
+# 确保所有目录下的 .DS_Store 都被忽略
+**/.DS_Store
 
 # Build artifacts
 *.dmg
@@ -113,4 +115,26 @@ __pycache__/
 venv/
 env/
 
+# IDE - IntelliJ IDEA, PyCharm, WebStorm, etc.
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+
+# Editor backup files
+*~
+.*.swp
+.*.swo
+.#*
+
+# Database files (if they contain user data or are generated)
+*.db
+*.sqlite
+*.sqlite3
+# 保留应用必需的初始数据文件
+!Moyu/Resources/moyu.db
 
