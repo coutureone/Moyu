@@ -19,6 +19,10 @@
 		010 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110 /* Extensions.swift */; };
 		011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 111 /* Assets.xcassets */; };
 		012 /* moyu.db in Resources */ = {isa = PBXBuildFile; fileRef = 113 /* moyu.db */; };
+		013 /* WrongBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114 /* WrongBookView.swift */; };
+		014 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115 /* FavoritesView.swift */; };
+		015 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116 /* StatisticsView.swift */; };
+		016 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +40,10 @@
 		111 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		112 /* Moyu.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Moyu.entitlements; sourceTree = "<group>"; };
 		113 /* moyu.db */ = {isa = PBXFileReference; lastKnownFileType = file; path = moyu.db; sourceTree = "<group>"; };
+		114 /* WrongBookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrongBookView.swift; sourceTree = "<group>"; };
+		115 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		116 /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		117 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +104,10 @@
 				107 /* RememberView.swift */,
 				108 /* ChoiceView.swift */,
 				109 /* CongratulateView.swift */,
+				114 /* WrongBookView.swift */,
+				115 /* FavoritesView.swift */,
+				116 /* StatisticsView.swift */,
+				117 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -206,6 +218,10 @@
 				008 /* ChoiceView.swift in Sources */,
 				009 /* CongratulateView.swift in Sources */,
 				010 /* Extensions.swift in Sources */,
+				013 /* WrongBookView.swift in Sources */,
+				014 /* FavoritesView.swift in Sources */,
+				015 /* StatisticsView.swift in Sources */,
+				016 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

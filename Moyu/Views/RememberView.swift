@@ -13,14 +13,31 @@ struct RememberView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // 进度条
+            if !appState.wordList.isEmpty {
+                VStack(spacing: 4) {
+                    ProgressView(value: Double(appState.currentIndex + 1), total: Double(appState.wordList.count))
+                        .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#0077b6")))
+                        .scaleEffect(x: 1, y: 0.5, anchor: .center)
+                    
+                    Text("\(appState.currentIndex + 1)/\(appState.wordList.count)")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color.gray)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.horizontal, 10)
+                }
+                .padding(.top, 4)
+                .padding(.horizontal, 10)
+            }
+
             if let word = currentWord {
                 // 根据词书类型显示不同内容
                 if appState.currentBook == "Goin" {
-                    GoinRememberContent(word: word, onAction: handleAction, onSpeak: speakWord)
+                    GoinRememberContent(word: word, onAction: handleAction, onSpeak: speakWord, onFavorite: toggleFavorite)
                 } else if appState.currentBook == "StdJp_Mid" {
-                    JapaneseRememberContent(word: word, onAction: handleAction, onSpeak: speakJapanese)
+                    JapaneseRememberContent(word: word, onAction: handleAction, onSpeak: speakJapanese, onFavorite: toggleFavorite)
                 } else {
-                    EnglishRememberContent(word: word, onAction: handleAction, onSpeak: speakWord)
+                    EnglishRememberContent(word: word, onAction: handleAction, onSpeak: speakWord, onFavorite: toggleFavorite)
                 }
             } else {
                 Text("没有更多单词了")
@@ -45,12 +62,20 @@ struct RememberView: View {
                 case "3":
                     speakWord()
                     return nil
+                case "4":
+                    toggleFavorite()
+                    return nil
                 default:
                     break
                 }
             }
             return event
         }
+    }
+    
+    private func toggleFavorite() {
+        guard let word = currentWord else { return }
+        appState.toggleFavorite(word: word)
     }
     
     private func handleAction(tooEasy: Bool) {
@@ -89,6 +114,7 @@ struct EnglishRememberContent: View {
     let word: Word
     let onAction: (Bool) -> Void
     let onSpeak: () -> Void
+    let onFavorite: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -96,9 +122,19 @@ struct EnglishRememberContent: View {
             VStack(alignment: .leading, spacing: 2) {
                 // 单词和音标
                 HStack(alignment: .firstTextBaseline, spacing: 20) {
-                    Text(word.headWord)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: "#3d5a80"))
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(word.headWord)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(Color(hex: "#3d5a80"))
+                        
+                        // 收藏星标
+                        Button(action: onFavorite) {
+                            Image(systemName: word.isFavorite ? "star.fill" : "star")
+                                .font(.system(size: 13))
+                                .foregroundColor(word.isFavorite ? Color(hex: "#f4a261") : Color(hex: "#adb5bd"))
+                        }
+                        .buttonStyle(.plain)
+                    }
                     
                     Text("[\(word.usphone)]")
                         .font(.system(size: 12, weight: .light).italic())
@@ -156,13 +192,23 @@ struct GoinRememberContent: View {
     let word: Word
     let onAction: (Bool) -> Void
     let onSpeak: () -> Void
+    let onFavorite: () -> Void
     
     var body: some View {
         VStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("平假名：[\(word.hiragana ?? "")]")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "#3d5a80"))
+                HStack(spacing: 6) {
+                    Text("平假名：[\(word.hiragana ?? "")]")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "#3d5a80"))
+                    
+                    Button(action: onFavorite) {
+                        Image(systemName: word.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 13))
+                            .foregroundColor(word.isFavorite ? Color(hex: "#f4a261") : Color(hex: "#adb5bd"))
+                    }
+                    .buttonStyle(.plain)
+                }
                 
                 Text("片假名：[\(word.katakana ?? "")]")
                     .font(.system(size: 15))
@@ -197,9 +243,10 @@ struct JapaneseRememberContent: View {
     let word: Word
     let onAction: (Bool) -> Void
     let onSpeak: () -> Void
+    let onFavorite: () -> Void
     
     var body: some View {
-        EnglishRememberContent(word: word, onAction: onAction, onSpeak: onSpeak)
+        EnglishRememberContent(word: word, onAction: onAction, onSpeak: onSpeak, onFavorite: onFavorite)
     }
 }
 

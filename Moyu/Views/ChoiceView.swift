@@ -3,11 +3,14 @@ import SwiftUI
 // MARK: - Choice View (选择题页面)
 struct ChoiceView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
     @State private var currentIndex = 0
     @State private var answers: [String] = []
     @State private var showAnswer = false
     @State private var isComplete = false
     @State private var filterList: [Word] = []
+    @State private var inputText: String = ""
+    @State private var inputFeedback: String = ""
     
     var currentWord: Word? {
         guard currentIndex < filterList.count else { return nil }
@@ -16,8 +19,14 @@ struct ChoiceView: View {
     
     var body: some View {
         ZStack {
-            Color(hex: "#f1ecec")
-                .ignoresSafeArea()
+            Group {
+                if colorScheme == .dark {
+                    Color(hex: "#1a1a2e")
+                } else {
+                    Color(hex: "#f1ecec")
+                }
+            }
+            .ignoresSafeArea()
             
             if isComplete {
                 CongratulateView()
@@ -25,35 +34,66 @@ struct ChoiceView: View {
                 TooEasyView()
             } else if let word = currentWord {
                 VStack(spacing: 0) {
-                    // 问题 (中文释义)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        Text(word.tranCN)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color(hex: "#3d5a80"))
-                            .padding(.horizontal, 13)
+                    // 进度条：当前题目 / 总题目数
+                    if !filterList.isEmpty {
+                        VStack(spacing: 4) {
+                            ProgressView(
+                                value: Double(currentIndex + 1),
+                                total: Double(filterList.count)
+                            )
+                            .progressViewStyle(
+                                LinearProgressViewStyle(tint: Color(hex: "#0077b6"))
+                            )
+                            .scaleEffect(x: 1, y: 0.5, anchor: .center)
+                            
+                            Text("\(currentIndex + 1)/\(filterList.count)")
+                                .font(.system(size: 10))
+                                .foregroundColor(Color.gray)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .padding(.horizontal, 10)
+                        }
+                        .padding(.top, 4)
+                        .padding(.horizontal, 10)
                     }
-                    .frame(height: 55)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 8)
                     
-                    // 答案选项
-                    HStack(spacing: 5) {
-                        ForEach(Array(answers.enumerated()), id: \.offset) { index, answer in
-                            AnswerButton(
-                                title: answer,
-                                index: index + 1,
-                                isCorrect: answer == word.headWord,
-                                showAnswer: showAnswer
-                            ) {
-                                handleAnswer(answer)
+                    // 问题区域
+                    questionView(for: word)
+                    
+                    // 答案区域
+                    if appState.quizMode == .spelling {
+                        VStack(spacing: 8) {
+                            TextField("输入英文单词", text: $inputText, onCommit: {
+                                handleSpelling()
+                            })
+                            .textFieldStyle(.roundedBorder)
+                            .padding(.horizontal, 12)
+                            
+                            if !inputFeedback.isEmpty {
+                                Text(inputFeedback)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(showAnswer ? Color(hex: "#e76f51") : .green)
                             }
                         }
+                        .padding(.horizontal, 10)
+                    } else {
+                        HStack(spacing: 5) {
+                            ForEach(Array(answers.enumerated()), id: \.offset) { index, answer in
+                                AnswerButton(
+                                    title: answer,
+                                    index: index + 1,
+                                    isCorrect: isCorrect(answer: answer, word: word),
+                                    showAnswer: showAnswer
+                                ) {
+                                    handleChoice(answer)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 10)
                     }
-                    .padding(.horizontal, 10)
                     
                     // 错误提示
-                    if showAnswer {
-                        Text("答错了。正确答案是：\(word.headWord)")
+                    if showAnswer, appState.quizMode != .spelling {
+                        Text("答错了。正确答案是：\(correctAnswer(for: word))")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "#e76f51"))
                             .padding(.top, 10)
@@ -70,10 +110,33 @@ struct ChoiceView: View {
         }
     }
     
+    private func questionView(for word: Word) -> some View {
+        let questionText: String = {
+            switch appState.quizMode {
+            case .cnToEn, .spelling:
+                return word.tranCN
+            case .enToCn:
+                return word.headWord
+            }
+        }()
+        
+        return ScrollView(.horizontal, showsIndicators: false) {
+            Text(questionText)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "#3d5a80"))
+                .padding(.horizontal, 13)
+        }
+        .frame(height: 55)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+    }
+    
     private func setupQuiz() {
         // 过滤出未背过的单词
         filterList = appState.wordList.filter { $0.status == 0 }
         currentIndex = 0
+        inputText = ""
+        inputFeedback = ""
         generateAnswers()
     }
     
@@ -87,25 +150,36 @@ struct ChoiceView: View {
             excluding: word.wordRank
         )
         
-        // 创建答案数组并打乱
-        var allAnswers = wrongWords.map { $0.headWord }
-        let correctIndex = Int.random(in: 0...2)
-        allAnswers.insert(word.headWord, at: min(correctIndex, allAnswers.count))
+        var allAnswers: [String]
+        switch appState.quizMode {
+        case .cnToEn:
+            allAnswers = wrongWords.map { $0.headWord }
+            let correctIndex = Int.random(in: 0...2)
+            allAnswers.insert(word.headWord, at: min(correctIndex, allAnswers.count))
+        case .enToCn:
+            allAnswers = wrongWords.map { $0.tranCN }
+            let correctIndex = Int.random(in: 0...2)
+            allAnswers.insert(word.tranCN, at: min(correctIndex, allAnswers.count))
+        case .spelling:
+            allAnswers = []
+        }
         
-        // 确保只有3个答案
-        answers = Array(allAnswers.prefix(3))
+        if appState.quizMode != .spelling {
+            answers = Array(allAnswers.prefix(3))
+        }
     }
     
-    private func handleAnswer(_ answer: String) {
+    private func handleChoice(_ answer: String) {
         guard !showAnswer, let word = currentWord else { return }
         
-        if answer == word.headWord {
+        if isCorrect(answer: answer, word: word) {
             // 答对
             appState.updateWordStatus(wordRank: word.wordRank, status: 1)
             appState.incrementProgress()
             moveToNext()
         } else {
-            // 答错，显示正确答案
+                // 答错，显示正确答案
+            appState.recordWrongAnswer(word: word)
             showAnswer = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 showAnswer = false
@@ -114,11 +188,55 @@ struct ChoiceView: View {
         }
     }
     
+    private func handleSpelling() {
+        guard let word = currentWord else { return }
+        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased() == word.headWord.lowercased() {
+            appState.updateWordStatus(wordRank: word.wordRank, status: 1)
+            appState.incrementProgress()
+            inputFeedback = "✅ 正确"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                inputText = ""
+                inputFeedback = ""
+                moveToNext()
+            }
+        } else {
+            inputFeedback = "❌ 正确答案：\(word.headWord)"
+            showAnswer = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                showAnswer = false
+                inputText = ""
+                moveToNext()
+            }
+        }
+    }
+    
+    private func isCorrect(answer: String, word: Word) -> Bool {
+        switch appState.quizMode {
+        case .cnToEn:
+            return answer == word.headWord
+        case .enToCn:
+            return answer == word.tranCN
+        case .spelling:
+            return false
+        }
+    }
+    
+    private func correctAnswer(for word: Word) -> String {
+        switch appState.quizMode {
+        case .cnToEn: return word.headWord
+        case .enToCn: return word.tranCN
+        case .spelling: return word.headWord
+        }
+    }
+    
     private func moveToNext() {
         if currentIndex >= filterList.count - 1 {
             isComplete = true
         } else {
             currentIndex += 1
+            inputText = ""
+            inputFeedback = ""
             generateAnswers()
         }
     }
@@ -127,9 +245,10 @@ struct ChoiceView: View {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if let characters = event.charactersIgnoringModifiers,
                let num = Int(characters),
-               num >= 1 && num <= 3 {
+               num >= 1 && num <= 3,
+               appState.quizMode != .spelling {
                 if num <= answers.count {
-                    handleAnswer(answers[num - 1])
+                    handleChoice(answers[num - 1])
                 }
                 return nil
             }

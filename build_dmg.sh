@@ -11,13 +11,27 @@ VERSION="${VERSION:-1.0.0}"
 DMG_NAME="${APP_NAME}-${VERSION}"
 BUILD_DIR="build"
 ARCHIVE_PATH="${BUILD_DIR}/${APP_NAME}.xcarchive"
+DESTINATION="platform=macOS"
 EXPORT_PATH="${BUILD_DIR}/Export"
 DMG_DIR="${BUILD_DIR}/dmg"
 FINAL_DMG="${BUILD_DIR}/${DMG_NAME}.dmg"
 
 echo "🚀 开始打包 ${APP_NAME} v${VERSION}..."
 
-# 检查是否已有构建好的应用
+# 检查是否需要重新构建
+if [ "${FORCE_REBUILD}" = "1" ]; then
+    echo "🔁 检测到 FORCE_REBUILD=1，强制重新构建应用..."
+    rm -rf "${EXPORT_PATH:?}/${APP_NAME}.app" "${ARCHIVE_PATH}" "${BUILD_DIR}/DerivedData"
+    echo "📦 使用 Release 配置重新构建..."
+    xcodebuild -project Moyu.xcodeproj \
+        -scheme Moyu \
+        -configuration Release \
+        -destination "${DESTINATION}" \
+        -derivedDataPath "${BUILD_DIR}/DerivedData" \
+        build
+fi
+
+# 如果没有现成的构建，才进行完整构建流程
 if [ -d "${EXPORT_PATH}/${APP_NAME}.app" ]; then
     echo "✅ 发现已有构建好的应用，直接使用..."
 else
@@ -29,12 +43,14 @@ else
     xcodebuild -project Moyu.xcodeproj \
         -scheme Moyu \
         -configuration Release \
+        -destination "${DESTINATION}" \
         -archivePath "${ARCHIVE_PATH}" \
         archive || {
         echo "⚠️ Archive 构建失败，尝试直接构建..."
         xcodebuild -project Moyu.xcodeproj \
             -scheme Moyu \
             -configuration Release \
+            -destination "${DESTINATION}" \
             -derivedDataPath "${BUILD_DIR}/DerivedData" \
             build
         # 尝试从构建目录复制
