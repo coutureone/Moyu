@@ -345,10 +345,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
+        // 获取保存的窗口尺寸
+        let savedWidth = AppState.shared.windowWidth
+        let savedHeight = AppState.shared.windowHeight
+        
         // 创建新窗口（可调整尺寸）
         let contentView = ContentView().environmentObject(AppState.shared)
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 360, height: 220),
+            contentRect: NSRect(x: 0, y: 0, width: savedWidth, height: savedHeight),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -358,8 +362,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = NSHostingView(rootView: contentView)
         window.level = .floating
         window.backgroundColor = NSColor(hex: "#d7e1ec")
-        window.setContentSize(NSSize(width: 360, height: 220))
+        window.setContentSize(NSSize(width: savedWidth, height: savedHeight))
         window.minSize = NSSize(width: 320, height: 200)
+        window.maxSize = NSSize(width: 600, height: 500)
         
         // 定位到屏幕右上角
         if let screen = NSScreen.main {
@@ -367,6 +372,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let x = screenRect.maxX - window.frame.width
             let y = screenRect.maxY - window.frame.height
             window.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+        
+        // 监听窗口尺寸变化
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification,
+            object: window,
+            queue: .main
+        ) { notification in
+            if let resizedWindow = notification.object as? NSWindow {
+                let newSize = resizedWindow.frame.size
+                AppState.shared.windowWidth = newSize.width
+                AppState.shared.windowHeight = newSize.height
+            }
         }
         
         mainWindow = window

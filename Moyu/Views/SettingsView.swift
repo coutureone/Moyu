@@ -81,6 +81,7 @@ struct SettingsView: View {
             sectionHeader(icon: "📖", title: "学习设置")
             
             VStack(spacing: 12) {
+                // 每组单词数量
                 HStack {
                     Text("每组单词数量")
                         .font(.system(size: 13))
@@ -109,11 +110,115 @@ struct SettingsView: View {
                     }
                     .menuStyle(.borderlessButton)
                 }
+                
+                Divider()
+                
+                // 测试模式选择
+                HStack {
+                    Text("测试模式")
+                        .font(.system(size: 13))
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                    
+                    Menu {
+                        ForEach(QuizMode.allCases, id: \.rawValue) { mode in
+                            Button(action: {
+                                appState.quizMode = mode
+                            }) {
+                                HStack {
+                                    Text(mode.displayName)
+                                    if appState.quizMode == mode {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(appState.quizMode.displayName)
+                                .font(.system(size: 13))
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundColor(Color(hex: "#0077b6"))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(hex: "#0077b6").opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                    .menuStyle(.borderlessButton)
+                }
+                
+                Divider()
+                
+                // 每日学习目标
+                HStack {
+                    Text("每日目标")
+                        .font(.system(size: 13))
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                    
+                    Menu {
+                        ForEach([20, 30, 50, 100, 150, 200], id: \.self) { goal in
+                            Button("\(goal) 词") {
+                                appState.dailyGoal = goal
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("\(appState.dailyGoal) 词")
+                                .font(.system(size: 13))
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundColor(Color(hex: "#0077b6"))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(hex: "#0077b6").opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                    .menuStyle(.borderlessButton)
+                }
+                
+                Divider()
+                
+                // TTS语速调节
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("发音语速")
+                            .font(.system(size: 13))
+                            .foregroundColor(textColor)
+                        
+                        Spacer()
+                        
+                        Text(ttsSpeedLabel)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#0077b6"))
+                    }
+                    
+                    Slider(value: $appState.ttsSpeed, in: 0.2...0.8, step: 0.1)
+                        .tint(Color(hex: "#0077b6"))
+                }
             }
             .padding(12)
             .background(cardBackground)
             .cornerRadius(10)
             .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        }
+    }
+    
+    private var ttsSpeedLabel: String {
+        switch appState.ttsSpeed {
+        case 0.2: return "很慢"
+        case 0.3: return "慢速"
+        case 0.4: return "正常"
+        case 0.5: return "稍快"
+        case 0.6: return "快速"
+        case 0.7: return "很快"
+        case 0.8: return "极快"
+        default: return "正常"
         }
     }
     

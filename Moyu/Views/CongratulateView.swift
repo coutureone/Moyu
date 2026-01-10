@@ -6,6 +6,12 @@ struct CongratulateView: View {
     @EnvironmentObject var appState: AppState
     @State private var showConfetti = false
     @State private var isHovered = false
+    @State private var showGoalComplete = false
+    
+    private var justCompletedGoal: Bool {
+        // 检查是否刚刚完成目标（之前未完成，现在完成了）
+        appState.isDailyGoalCompleted && appState.statistics.todayLearned <= appState.dailyGoal + 10
+    }
     
     var body: some View {
         ZStack {
@@ -14,29 +20,52 @@ struct CongratulateView: View {
                 ConfettiView()
             }
             
-            // 完成按钮
-            Button(action: finishLearning) {
-                Text(isHovered ? "回到首页 🎉" : "完成！")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#3d5a80"))
-                    .frame(width: isHovered ? 150 : 100, height: 35)
-                    .background(Color.white)
-                    .cornerRadius(5)
-                    .shadow(color: .black.opacity(0.1), radius: 5, y: 5)
-                    .animation(.easeInOut(duration: 0.3), value: isHovered)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                isHovered = hovering
-                if hovering {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
+            VStack(spacing: 12) {
+                // 目标完成庆祝
+                if showGoalComplete {
+                    VStack(spacing: 6) {
+                        Text("🎊")
+                            .font(.system(size: 32))
+                        Text("今日目标已完成！")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color.green)
+                        Text("已学习 \(appState.statistics.todayLearned) 词")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#0077b6"))
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                
+                // 完成按钮
+                Button(action: finishLearning) {
+                    Text(isHovered ? "回到首页 🎉" : "完成！")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "#3d5a80"))
+                        .frame(width: isHovered ? 150 : 100, height: 35)
+                        .background(Color.white)
+                        .cornerRadius(5)
+                        .shadow(color: .black.opacity(0.1), radius: 5, y: 5)
+                        .animation(.easeInOut(duration: 0.3), value: isHovered)
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    isHovered = hovering
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
                 }
             }
         }
         .onAppear {
             showConfetti = true
+            appState.loadStatistics()
+            if justCompletedGoal {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                    showGoalComplete = true
+                }
+            }
         }
     }
     

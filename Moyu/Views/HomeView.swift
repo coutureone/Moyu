@@ -10,7 +10,9 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Spacer()
+            // 今日进度
+            DailyProgressView()
+                .padding(.top, 8)
             
             Text("这次要背多少个？")
                 .font(.system(size: 18, weight: .semibold))
@@ -73,6 +75,7 @@ struct HomeView: View {
         .onAppear {
             selectedCount = appState.defaultWordCount
             customCount = nil
+            appState.loadStatistics()
         }
     }
     
@@ -106,6 +109,69 @@ struct HomeView: View {
         .environmentObject(AppState.shared)
         .frame(width: 300, height: 150)
         .background(Color(hex: "#d7e1ec"))
+}
+
+// MARK: - Daily Progress View (今日进度)
+private struct DailyProgressView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
+    
+    private var progress: Double {
+        guard appState.dailyGoal > 0 else { return 0 }
+        return min(Double(appState.statistics.todayLearned) / Double(appState.dailyGoal), 1.0)
+    }
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text("今日进度")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#778da9"))
+                
+                Spacer()
+                
+                if appState.isDailyGoalCompleted {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 11))
+                        Text("已完成!")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.green)
+                } else {
+                    Text("\(appState.statistics.todayLearned)/\(appState.dailyGoal)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#0077b6"))
+                }
+            }
+            
+            // 进度条
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(hex: "#e0e7ee"))
+                        .frame(height: 8)
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            appState.isDailyGoalCompleted
+                                ? LinearGradient(colors: [Color.green, Color(hex: "#2ec4b6")], startPoint: .leading, endPoint: .trailing)
+                                : LinearGradient(colors: [Color(hex: "#0077b6"), Color(hex: "#00b4d8")], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .frame(width: geometry.size.width * progress, height: 8)
+                        .animation(.easeInOut(duration: 0.3), value: progress)
+                }
+            }
+            .frame(height: 8)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(colorScheme == .dark ? Color(hex: "#16213e") : Color.white)
+                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        )
+    }
 }
 
 // MARK: - Quick Link Button

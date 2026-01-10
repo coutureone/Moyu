@@ -96,7 +96,7 @@ struct RememberView: View {
         guard let word = currentWord else { return }
         let utterance = AVSpeechUtterance(string: word.headWord)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = 0.4
+        utterance.rate = Float(appState.ttsSpeed)
         synthesizer.speak(utterance)
     }
     
@@ -104,7 +104,7 @@ struct RememberView: View {
         guard let word = currentWord else { return }
         let utterance = AVSpeechUtterance(string: word.headWord)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")
-        utterance.rate = 0.4
+        utterance.rate = Float(appState.ttsSpeed)
         synthesizer.speak(utterance)
     }
 }

@@ -59,6 +59,37 @@ class AppState: ObservableObject {
     private var learningStartTime: Date?
     @Published var todayLearningDuration: Int = 0
     
+    // 新增：每日目标
+    @Published var dailyGoal: Int = 50 {
+        didSet {
+            UserDefaults.standard.set(dailyGoal, forKey: "dailyGoal")
+        }
+    }
+    
+    // 新增：TTS语速 (0.1 - 1.0)
+    @Published var ttsSpeed: Double = 0.4 {
+        didSet {
+            UserDefaults.standard.set(ttsSpeed, forKey: "ttsSpeed")
+        }
+    }
+    
+    // 新增：窗口尺寸记忆
+    @Published var windowWidth: CGFloat = 320 {
+        didSet {
+            UserDefaults.standard.set(windowWidth, forKey: "windowWidth")
+        }
+    }
+    @Published var windowHeight: CGFloat = 200 {
+        didSet {
+            UserDefaults.standard.set(windowHeight, forKey: "windowHeight")
+        }
+    }
+    
+    // 新增：今日是否完成目标
+    var isDailyGoalCompleted: Bool {
+        statistics.todayLearned >= dailyGoal
+    }
+    
     private init() {
         loadSettings()
         loadStatistics()
@@ -93,6 +124,20 @@ class AppState: ObservableObject {
         if let savedTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date {
             reminderTime = savedTime
         }
+        
+        // 加载每日目标
+        let savedGoal = UserDefaults.standard.integer(forKey: "dailyGoal")
+        dailyGoal = savedGoal > 0 ? savedGoal : 50
+        
+        // 加载TTS语速
+        let savedSpeed = UserDefaults.standard.double(forKey: "ttsSpeed")
+        ttsSpeed = savedSpeed > 0 ? savedSpeed : 0.4
+        
+        // 加载窗口尺寸
+        let savedWidth = UserDefaults.standard.double(forKey: "windowWidth")
+        let savedHeight = UserDefaults.standard.double(forKey: "windowHeight")
+        windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 320
+        windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 200
         
         // 从数据库同步
         let (book, count) = DatabaseService.shared.getGlobalSettings()
