@@ -53,31 +53,17 @@ jobs:
     - name: Make build script executable
       run: chmod +x build_dmg.sh
       
-    - name: Build for Apple Silicon
+    - name: Build (Universal Binary)
       env:
         VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}
       run: |
-        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release -arch arm64 build
+        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release build
         ./build_dmg.sh
         
-    - name: Build for Intel
-      env:
-        VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}
-      run: |
-        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release -arch x86_64 build
-        ./build_dmg.sh
-        
-    - name: Upload Apple Silicon DMG
+    - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: Moyu-AppleSilicon
-        path: build/Moyu-*.dmg
-        retention-days: 30
-
-    - name: Upload Intel DMG
-      uses: actions/upload-artifact@v4
-      with:
-        name: Moyu-Intel
+        name: Moyu
         path: build/Moyu-*.dmg
         retention-days: 30
 
@@ -106,10 +92,7 @@ jobs:
           
           ### 📦 下载
           
-          支持 Apple Silicon (M1/M2/M3) 和 Intel Mac：
-          
-          - **Apple Silicon**: `Moyu-AppleSilicon-*.dmg`
-          - **Intel**: `Moyu-Intel-*.dmg`
+          下载 `Moyu-x.x.x.dmg` 文件并安装，支持 Apple Silicon (M1/M2/M3) 和 Intel Mac。
           
           ### 📝 安装说明
           
