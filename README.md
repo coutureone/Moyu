@@ -1,3 +1,9 @@
+<div align="center">
+  <button onclick="toggleLanguage()" style="padding: 8px 16px; font-size: 14px; cursor: pointer; background: #24292f; color: white; border: none; border-radius: 6px;">🌐 切换语言 / Switch Language</button>
+</div>
+
+<div id="zh-cn">
+
 # Moyu 摸鱼背单词
 
 <div align="center">
@@ -131,9 +137,11 @@ MIT License
 - 原版 [ToastFish](https://lab.magiconch.com/toast-fish/)
 - [Electron 版 toastfish-mac](https://github.com/Charliecheung2/toastfish-mac)
 
----
+</div>
 
-# Moyu - English Version
+<div id="en" style="display: none;">
+
+# Moyu
 
 <div align="center">
 
@@ -265,3 +273,19 @@ MIT License
 
 - Original [ToastFish](https://lab.magiconch.com/toast-fish/)
 - [Electron version toastfish-mac](https://github.com/Charliecheung2/toastfish-mac)
+
+</div>
+
+<script>
+function toggleLanguage() {
+  var zh = document.getElementById('zh-cn');
+  var en = document.getElementById('en');
+  if (zh.style.display === 'none') {
+    zh.style.display = 'block';
+    en.style.display = 'none';
+  } else {
+    zh.style.display = 'none';
+    en.style.display = 'block';
+  }
+}
+</script>
