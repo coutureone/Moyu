@@ -1,0 +1,149 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送以 v 开头的 tag 时触发，例如 v1.0.0
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: '版本号 (例如: 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runs-on }}
+    permissions:
+      contents: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs-on: macos-latest
+            arch: arm64
+            arch-name: AppleSilicon
+          - runs-on: macos-Intel
+            arch: x86_64
+            arch-name: Intel
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Get version from tag
+      id: get_version
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+    - name: Set version from input
+      id: set_version
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        
+    - name: Set version environment variable
+      run: |
+        VERSION="${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}"
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "✅ 版本已设置为: $VERSION"
+        
+    - name: Make build script executable
+      run: chmod +x build_dmg.sh
+      
+    - name: Build for ${{ matrix.arch-name }}
+      env:
+        VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}
+        ARCH: ${{ matrix.arch }}
+      run: |
+        # 根据架构设置目标
+        if [ "$ARCH" = "arm64" ]; then
+          TARGET="arm64-apple-macos13.0"
+        else
+          TARGET="x86_64-apple-macos13.0"
+        fi
+        
+        # 编译
+        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release -arch $ARCH build
+        
+        # 打包 DMG
+        ./build_dmg.sh
+        
+    - name: Upload DMG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Moyu-${{ matrix.arch-name }}-${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}.dmg
+        path: build/Moyu-*.dmg
+        retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Download all DMG artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Find DMG files
+      id: find_dmgs
+      run: |
+        DMG_FILES=$(find artifacts -name "*.dmg" | tr '\n' ',')
+        echo "files=$DMG_FILES" >> $GITHUB_OUTPUT
+        echo "Found DMG files: $DMG_FILES"
+        
+    - name: Create tag if not exists (manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        echo "Tag will be created by the build job"
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ needs.build.outputs.files }}
+        tag_name: ${{ github.ref }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## Moyu 摸鱼背单词 ${{ github.ref_name }}
+          
+          ### 📦 下载
+          
+          支持 Apple Silicon (M1/M2/M3) 和 Intel Mac：
+          
+          - **Apple Silicon**: `Moyu-AppleSilicon-${{ github.ref_name }}.dmg`
+          - **Intel**: `Moyu-Intel-${{ github.ref_name }}.dmg`
+          
+          ### 📝 安装说明
+          
+          如果遇到"无法打开，因为无法验证开发者"的提示：
+          
+          1. **方法一（推荐）**：右键点击 `Moyu.app`，选择"打开"
+          2. **方法二**：打开"系统设置" > "隐私与安全性"，点击"仍要打开"
+          3. **方法三**：在终端运行 `xattr -cr /Applications/Moyu.app`
+          
+          ### ✨ 更新内容
+          
+          - 查看 [CHANGELOG.md](../CHANGELOG.md) 了解详细更新内容
+          
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
