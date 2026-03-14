@@ -7,21 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.0] - 2026-03-14
-
-### Added
-- 🚀 **开机启动功能**：使用 ServiceManagement 框架实现真正的开机启动
-- 💾 **数据管理增强**：支持清空错词本、收藏夹、所有学习进度
-- 📤 **数据导出**：支持导出学习数据到 JSON 文件
-- 🔍 **词库搜索**：新增搜索单词功能
-
-### Changed
-- 📊 **统计图表改进**：macOS 14+ 显示正确/错误数量细分
-- 更新项目链接地址到新仓库
-
-### Fixed
-- 修复了一些编译问题
-
 ## [1.2.0] - 2026-01-10
 
 ### Added
@@ -49,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - 窗口支持自定义尺寸，默认更贴合新 UI
-- 主页标题与"自定义"文案加粗放大，滚轮选择区域缩小更紧凑
+- 主页标题与“自定义”文案加粗放大，滚轮选择区域缩小更紧凑
 
 ### Fixed
 - 深色模式页面不统一、手动切换卡死问题
@@ -72,8 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复图标白色边框问题（使用 PNG 格式和透明通道）
 - 修复 Gatekeeper 阻止问题（添加安装说明）
 
-[Unreleased]: https://github.com/coutureone/Moyu/compare/v1.3.0...HEAD
-[1.3.0]: https://github.com/coutureone/Moyu/releases/tag/v1.3.0
-[1.2.0]: https://github.com/coutureone/Moyu/releases/tag/v1.2.0
-[1.1.0]: https://github.com/coutureone/Moyu/releases/tag/v1.1.0
-[1.0.0]: https://github.com/coutureone/Moyu/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Charliecheung2/toastfish-mac/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Charliecheung2/toastfish-mac/releases/tag/v1.1.0
+[1.0.0]: https://github.com/Charliecheung2/toastfish-mac/releases/tag/v1.0.0
+
+

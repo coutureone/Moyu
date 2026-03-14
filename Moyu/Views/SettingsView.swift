@@ -1,17 +1,12 @@
 import SwiftUI
 
 // MARK: - Settings View (设置页面)
-    // MARK: - Settings View (设置页面)
 // MARK: - Settings View (设置页面)
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @State private var showResetAlert = false
     @State private var bookToReset: String = ""
-    @State private var showClearWrongAlert = false
-    @State private var showClearFavoritesAlert = false
-    @State private var showClearAllAlert = false
-    @State private var showExportSuccess = false
     
     var body: some View {
         ScrollView {
@@ -297,84 +292,24 @@ struct SettingsView: View {
                     title: "错词本",
                     count: DatabaseService.shared.getWrongBookCount(),
                     icon: "📕"
-                ) {
-                    showClearWrongAlert = true
-                }
+                )
                 
                 DataManagementRow(
                     title: "收藏夹",
                     count: DatabaseService.shared.getFavoritesCount(),
                     icon: "⭐"
-                ) {
-                    showClearFavoritesAlert = true
-                }
+                )
                 
                 DataManagementRow(
                     title: "已解锁成就",
                     count: DatabaseService.shared.getUnlockedAchievementsCount(),
                     icon: "🏆"
                 )
-                
-                Divider()
-                
-                Button(action: exportData) {
-                    HStack {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("导出学习数据")
-                    }
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#0077b6"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                
-                Button(action: { showClearAllAlert = true }) {
-                    HStack {
-                        Image(systemName: "trash")
-                        Text("清空所有数据")
-                    }
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#e76f51"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
             }
             .padding(12)
             .background(cardBackground)
             .cornerRadius(10)
             .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
-        }
-        .alert("清空错词本", isPresented: $showClearWrongAlert) {
-            Button("取消", role: .cancel) { }
-            Button("清空", role: .destructive) {
-                DatabaseService.shared.clearWrongBook()
-            }
-        } message: {
-            Text("确定要清空所有错词记录吗？此操作不可恢复。")
-        }
-        .alert("清空收藏夹", isPresented: $showClearFavoritesAlert) {
-            Button("取消", role: .cancel) { }
-            Button("清空", role: .destructive) {
-                DatabaseService.shared.clearFavorites()
-            }
-        } message: {
-            Text("确定要清空所有收藏吗？此操作不可恢复。")
-        }
-        .alert("清空所有数据", isPresented: $showClearAllAlert) {
-            Button("取消", role: .cancel) { }
-            Button("清空", role: .destructive) {
-                DatabaseService.shared.clearAllProgress()
-                appState.loadStatistics()
-            }
-        } message: {
-            Text("确定要清空所有学习进度和数据吗？此操作不可恢复！")
-        }
-        .alert("导出成功", isPresented: $showExportSuccess) {
-            Button("确定", role: .cancel) { }
-        } message: {
-            Text("学习数据已导出到桌面 (moyu_export.json)")
         }
     }
     
@@ -415,25 +350,6 @@ struct SettingsView: View {
             "CET6_3": "六级完整词汇"
         ]
         return names[bookId] ?? bookId
-    }
-    
-    private func exportData() {
-        let data = DatabaseService.shared.exportData()
-        
-        guard !data.isEmpty else {
-            return
-        }
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: data, options: .prettyPrinted)
-            let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-            let fileURL = desktopURL.appendingPathComponent("moyu_export.json")
-            
-            try jsonData.write(to: fileURL)
-            showExportSuccess = true
-        } catch {
-            print("导出失败: \(error)")
-        }
     }
 }
 
@@ -527,27 +443,21 @@ struct DataManagementRow: View {
     let title: String
     let count: Int
     let icon: String
-    var action: (() -> Void)? = nil
     
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        Button(action: {
-            action?()
-        }) {
-            HStack {
-                Text(icon)
-                Text(title)
-                    .font(.system(size: 13))
-                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#3d5a80"))
-                Spacer()
-                Text("\(count)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "#0077b6"))
-            }
-            .padding(.vertical, 4)
+        HStack {
+            Text(icon)
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#3d5a80"))
+            Spacer()
+            Text("\(count)")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(Color(hex: "#0077b6"))
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 4)
     }
 }
 

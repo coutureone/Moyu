@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import ServiceManagement
 
 @main
 struct MoyuApp: App {
@@ -48,7 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 设置开机启动
         if UserDefaults.standard.bool(forKey: "launchAtLogin") {
-            enableLaunchAtLogin(enable: true)
+            // 开机启动逻辑
         }
         
         // 隐藏 Dock 图标（可选）
@@ -423,25 +422,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let newState = sender.state == .off
         sender.state = newState ? .on : .off
         UserDefaults.standard.set(newState, forKey: "launchAtLogin")
-        enableLaunchAtLogin(enable: newState)
-    }
-    
-    private func enableLaunchAtLogin(enable: Bool) {
-        if #available(macOS 13.0, *) {
-            do {
-                if enable {
-                    try SMAppService.mainApp.register()
-                } else {
-                    try SMAppService.mainApp.unregister()
-                }
-            } catch {
-                print("❌ 开机启动设置失败: \(error)")
-            }
-        }
+        // 实际的开机启动需要使用 SMLoginItemSetEnabled 或 LaunchAtLogin 库
     }
     
     @objc func openHelp() {
-        if let url = URL(string: "https://github.com/coutureone/Moyu/blob/main/README.md") {
+        if let url = URL(string: "https://github.com/Charliecheung2/toastfish-mac/blob/master/README.md") {
             NSWorkspace.shared.open(url)
         }
     }

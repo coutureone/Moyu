@@ -13,26 +13,16 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: macos-latest
     permissions:
-      contents: write
+      contents: write  # 需要写入权限来创建 release 和 tag
       actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runs-on: macos-latest
-            arch: arm64
-            arch-name: AppleSilicon
-          - runs-on: macos-Intel
-            arch: x86_64
-            arch-name: Intel
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 0  # 获取完整历史记录，用于创建 tag
         token: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Set up Xcode
@@ -64,70 +54,88 @@ jobs:
     - name: Make build script executable
       run: chmod +x build_dmg.sh
       
-    - name: Build for ${{ matrix.arch-name }}
+    - name: Build and package
       env:
         VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}
-        ARCH: ${{ matrix.arch }}
-      run: |
-        # 根据架构设置目标
-        if [ "$ARCH" = "arm64" ]; then
-          TARGET="arm64-apple-macos13.0"
-        else
-          TARGET="x86_64-apple-macos13.0"
-        fi
-        
-        # 编译
-        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release -arch $ARCH build
-        
-        # 打包 DMG
-        ./build_dmg.sh
-        
+      run: ./build_dmg.sh
+      
     - name: Upload DMG artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Moyu-${{ matrix.arch-name }}-${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}.dmg
+        name: Moyu-${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}.dmg
         path: build/Moyu-*.dmg
         retention-days: 30
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
-    steps:
-    - name: Download all DMG artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
         
-    - name: Find DMG files
-      id: find_dmgs
+    - name: Find DMG file
+      id: find_dmg
       run: |
-        DMG_FILES=$(find artifacts -name "*.dmg" | tr '\n' ',')
-        echo "files=$DMG_FILES" >> $GITHUB_OUTPUT
-        echo "Found DMG files: $DMG_FILES"
+        DMG_FILE=$(ls build/Moyu-*.dmg 2>/dev/null | head -n 1)
+        if [ -z "$DMG_FILE" ]; then
+          echo "❌ 错误: 找不到 DMG 文件"
+          exit 1
+        fi
+        echo "file=$DMG_FILE" >> $GITHUB_OUTPUT
+        echo "✅ 找到 DMG 文件: $DMG_FILE"
         
     - name: Create tag if not exists (manual trigger)
       if: github.event_name == 'workflow_dispatch'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Tag will be created by the build job"
+        TAG_NAME="${{ steps.set_version.outputs.tag }}"
+        echo "🔍 检查 tag: $TAG_NAME"
+        
+        # 获取远程 tag 列表
+        git fetch --tags --force
+        
+        # 检查 tag 是否已存在（本地或远程）
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1 || git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+          echo "ℹ️ Tag $TAG_NAME 已存在，跳过创建"
+        else
+          echo "🏷️ 创建新 tag: $TAG_NAME"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          
+          # 使用 GITHUB_TOKEN 推送 tag
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git push origin "$TAG_NAME"
+          echo "✅ Tag $TAG_NAME 创建并推送成功"
+          
+          # 等待一下确保 tag 已经同步
+          sleep 2
+        fi
+        
+    - name: Verify tag exists
+      id: verify_tag
+      run: |
+        TAG_NAME="${{ steps.get_version.outputs.tag || steps.set_version.outputs.tag }}"
+        echo "🔍 验证 tag 是否存在: $TAG_NAME"
+        
+        # 再次获取远程 tag
+        git fetch --tags --force
+        
+        # 检查 tag 是否存在
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1 || git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+          echo "✅ Tag $TAG_NAME 已确认存在"
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ 错误: Tag $TAG_NAME 不存在，无法创建 release"
+          exit 1
+        fi
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ needs.build.outputs.files }}
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref_name }}
+        files: ${{ steps.find_dmg.outputs.file }}
+        tag_name: ${{ steps.get_version.outputs.tag || steps.set_version.outputs.tag }}
+        name: Release ${{ steps.get_version.outputs.tag || steps.set_version.outputs.tag }}
         body: |
-          ## Moyu 摸鱼背单词 ${{ github.ref_name }}
+          ## Moyu 摸鱼背单词 v${{ steps.get_version.outputs.version || steps.set_version.outputs.version }}
           
           ### 📦 下载
           
-          支持 Apple Silicon (M1/M2/M3) 和 Intel Mac：
-          
-          - **Apple Silicon**: `Moyu-AppleSilicon-${{ github.ref_name }}.dmg`
-          - **Intel**: `Moyu-Intel-${{ github.ref_name }}.dmg`
+          下载 `Moyu-${{ steps.get_version.outputs.version || steps.set_version.outputs.version }}.dmg` 文件并安装。
           
           ### 📝 安装说明
           
@@ -147,3 +155,4 @@ jobs:
         make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

@@ -40,7 +40,7 @@
 
 ### 方式一：下载 DMG（推荐）
 
-1. 从 [Releases](https://github.com/coutureone/Moyu/releases) 下载最新的 `Moyu-x.x.x.dmg`
+1. 从 [Releases](https://github.com/Charliecheung2/toastfish-mac/releases) 下载最新的 `Moyu-x.x.x.dmg`
 2. 打开 DMG 文件
 3. 将 `Moyu.app` 拖入 `Applications` 文件夹
 4. 完成！
@@ -49,8 +49,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/coutureone/Moyu.git
-cd Moyu
+git clone https://github.com/Charliecheung2/toastfish-mac.git
+cd toastfish-mac/MoyuSwift
 
 # 使用 Xcode 打开
 open Moyu.xcodeproj
@@ -92,7 +92,7 @@ chmod +x build_dmg.sh
 ## 📁 项目结构
 
 ```
-Moyu/
+MoyuSwift/
 ├── Moyu.xcodeproj/          # Xcode 项目文件
 ├── Moyu/
 │   ├── MoyuApp.swift        # 应用入口 + AppDelegate
@@ -107,12 +107,28 @@ Moyu/
 │   │   └── CongratulateView.swift # 完成页
 │   ├── Services/
 │   │   └── DatabaseService.swift # SQLite 数据库服务
+│   ├── Utils/
+│   │   └── Extensions.swift      # 工具扩展
 │   └── Resources/
 │       └── Assets.xcassets       # 资源文件
 ├── build_dmg.sh             # DMG 打包脚本
 └── README.md                # 说明文档
 ```
 
+---
+
+
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+## 📄 许可证
+
+MIT License
+ 
 ---
 
 ## 🌟 致谢

@@ -135,23 +135,19 @@ struct StatisticsView: View {
                 .foregroundColor(textColor)
             
             if #available(macOS 14.0, *) {
-                Chart {
-                    ForEach(recentRecords.reversed()) { record in
-                        BarMark(
-                            x: .value("日期", formatDateString(record.dateString)),
-                            y: .value("正确", record.correctCount)
+                Chart(recentRecords.reversed()) { record in
+                    BarMark(
+                        x: .value("日期", formatDateString(record.dateString)),
+                        y: .value("数量", record.learnedCount)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "#0077b6"), Color(hex: "#00b4d8")],
+                            startPoint: .bottom,
+                            endPoint: .top
                         )
-                        .foregroundStyle(Color.green.opacity(0.8))
-                        .position(by: .value("类型", "正确"))
-                    }
-                    ForEach(recentRecords.reversed()) { record in
-                        BarMark(
-                            x: .value("日期", formatDateString(record.dateString)),
-                            y: .value("错误", record.wrongCount)
-                        )
-                        .foregroundStyle(Color.red.opacity(0.8))
-                        .position(by: .value("类型", "错误"))
-                    }
+                    )
+                    .cornerRadius(4)
                 }
                 .frame(height: 100)
                 .chartXAxis {
@@ -166,28 +162,9 @@ struct StatisticsView: View {
                             .font(.system(size: 9))
                     }
                 }
-                .chartLegend(position: .bottom)
             } else {
+                // 旧版本回退方案
                 SimpleBarChart(records: recentRecords.reversed())
-            }
-            
-            HStack(spacing: 20) {
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                    Text("正确")
-                        .font(.system(size: 10))
-                        .foregroundColor(secondaryTextColor)
-                }
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 8, height: 8)
-                    Text("错误")
-                        .font(.system(size: 10))
-                        .foregroundColor(secondaryTextColor)
-                }
             }
         }
         .padding(12)
