@@ -14,6 +14,20 @@
 
 ---
 
+## 🆕 Latest Version: v2.1.0
+
+This release focuses on settings, word bank management, and stealth-mode improvements. GitHub Actions has built the DMG automatically:
+
+- 💾 **Data management**: clear wrong book, clear favorites, reset all progress, export/import learning data
+- 📚 **Word bank management**: show all built-in banks, rename/delete custom banks, import preview and error messages
+- 🖥️ **Real launch at login**: integrated with the macOS login items API
+- 🫥 **Stealth mode**: opacity, compact window, top-right pinning, configurable hide/wake shortcuts
+- 🔧 **Fixes**: system theme switching, progress overflow, and stale custom-bank data cleanup
+
+Download: [Moyu-2.1.0.dmg](https://github.com/coutureone/Moyu/releases/download/v2.1.0/Moyu-2.1.0.dmg)
+
+---
+
 ## ✨ Features
 
 - 🚀 **Native Swift + SwiftUI** - Lightweight and fast
