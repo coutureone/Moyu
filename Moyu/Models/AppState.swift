@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import UserNotifications
+import AppKit
 
 // MARK: - App State (全局状态管理)
 class AppState: ObservableObject {
@@ -74,14 +75,46 @@ class AppState: ObservableObject {
     }
     
     // 新增：窗口尺寸记忆
-    @Published var windowWidth: CGFloat = 320 {
+    @Published var windowWidth: CGFloat = 380 {
         didSet {
             UserDefaults.standard.set(windowWidth, forKey: "windowWidth")
         }
     }
-    @Published var windowHeight: CGFloat = 200 {
+    @Published var windowHeight: CGFloat = 320 {
         didSet {
             UserDefaults.standard.set(windowHeight, forKey: "windowHeight")
+        }
+    }
+
+    @Published var compactMode: Bool = false {
+        didSet {
+            UserDefaults.standard.set(compactMode, forKey: "compactMode")
+            applyWindowPreferences()
+        }
+    }
+
+    @Published var pinToCorner: Bool = true {
+        didSet {
+            UserDefaults.standard.set(pinToCorner, forKey: "pinToCorner")
+            applyWindowPreferences()
+        }
+    }
+
+    @Published var windowOpacity: Double = 1.0 {
+        didSet {
+            let clamped = min(max(windowOpacity, 0.35), 1.0)
+            if clamped != windowOpacity {
+                windowOpacity = clamped
+                return
+            }
+            UserDefaults.standard.set(clamped, forKey: "windowOpacity")
+            applyWindowPreferences()
+        }
+    }
+
+    @Published var stealthShortcut: StealthShortcut = .moyuM {
+        didSet {
+            UserDefaults.standard.set(stealthShortcut.rawValue, forKey: "stealthShortcut")
         }
     }
     
@@ -136,8 +169,17 @@ class AppState: ObservableObject {
         // 加载窗口尺寸
         let savedWidth = UserDefaults.standard.double(forKey: "windowWidth")
         let savedHeight = UserDefaults.standard.double(forKey: "windowHeight")
-        windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 320
-        windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 200
+        windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 380
+        windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 320
+
+        compactMode = UserDefaults.standard.bool(forKey: "compactMode")
+        pinToCorner = UserDefaults.standard.object(forKey: "pinToCorner") as? Bool ?? true
+        let savedOpacity = UserDefaults.standard.double(forKey: "windowOpacity")
+        windowOpacity = savedOpacity > 0 ? min(max(savedOpacity, 0.35), 1.0) : 1.0
+        if let shortcutRaw = UserDefaults.standard.string(forKey: "stealthShortcut"),
+           let shortcut = StealthShortcut(rawValue: shortcutRaw) {
+            stealthShortcut = shortcut
+        }
         
         // 从数据库同步
         let (book, count) = DatabaseService.shared.getGlobalSettings()
@@ -151,18 +193,57 @@ class AppState: ObservableObject {
         statistics = DatabaseService.shared.getStatistics()
         todayLearningDuration = DatabaseService.shared.getTodayLearningDuration()
     }
+
+    func setCurrentBook(_ book: String) {
+        currentBook = book
+        UserDefaults.standard.set(book, forKey: "currentBook")
+        DatabaseService.shared.updateCurrentBook(book)
+    }
+
+    func setDefaultWordCount(_ count: Int) {
+        defaultWordCount = count
+        DatabaseService.shared.updateWordCount(count)
+    }
     
     // MARK: - Theme
     
     func applyTheme() {
         DispatchQueue.main.async {
+            let appearance: NSAppearance?
             switch self.appTheme {
             case .system:
-                NSApp.appearance = nil
+                appearance = nil
             case .light:
-                NSApp.appearance = NSAppearance(named: .aqua)
+                appearance = NSAppearance(named: .aqua)
             case .dark:
-                NSApp.appearance = NSAppearance(named: .darkAqua)
+                appearance = NSAppearance(named: .darkAqua)
+            }
+            NSApp.appearance = appearance
+            NSApp.windows.forEach { window in
+                window.appearance = appearance
+                window.contentView?.needsDisplay = true
+            }
+        }
+    }
+
+    func applyWindowPreferences() {
+        DispatchQueue.main.async {
+            for window in NSApp.windows {
+                window.alphaValue = min(max(self.windowOpacity, 0.35), 1.0)
+                window.level = .floating
+
+                if self.compactMode {
+                    window.setContentSize(NSSize(width: 340, height: 240))
+                } else if window.frame.width < 380 || window.frame.height < 320 {
+                    window.setContentSize(NSSize(width: 380, height: 320))
+                }
+
+                if self.pinToCorner, let screen = window.screen ?? NSScreen.main {
+                    let screenRect = screen.visibleFrame
+                    let x = screenRect.maxX - window.frame.width
+                    let y = screenRect.maxY - window.frame.height
+                    window.setFrameOrigin(NSPoint(x: x, y: y))
+                }
             }
         }
     }
@@ -175,17 +256,43 @@ class AppState: ObservableObject {
         startLearning()
     }
     
-    func updateWordStatus(wordRank: Int, status: Int) {
-        DatabaseService.shared.updateWordStatus(wordRank: wordRank, status: status, in: currentBook)
+    func bookName(for word: Word) -> String {
+        if let bookName = word.bookName, !bookName.isEmpty {
+            return bookName
+        }
+        return currentBook
+    }
+
+    func updateWordStatus(wordRank: Int, status: Int, in book: String? = nil) {
+        let targetBook = book ?? currentBook
+        DatabaseService.shared.updateWordStatus(wordRank: wordRank, status: status, in: targetBook)
         
         // 更新本地列表状态
-        if let index = wordList.firstIndex(where: { $0.wordRank == wordRank }) {
+        if let index = wordList.firstIndex(where: { $0.wordRank == wordRank && (bookName(for: $0) == targetBook || $0.bookName == nil) }) {
             wordList[index].status = status
         }
     }
     
-    func incrementProgress() {
-        DatabaseService.shared.incrementProgress(for: currentBook)
+    func incrementProgress(for book: String? = nil) {
+        DatabaseService.shared.incrementProgress(for: book ?? currentBook)
+    }
+
+    func markWordLearned(_ word: Word, recordCorrect: Bool) {
+        let targetBook = bookName(for: word)
+        let currentStatus = DatabaseService.shared.getWordStatus(wordRank: word.wordRank, in: targetBook) ?? wordList.first {
+            $0.wordRank == word.wordRank && bookName(for: $0) == targetBook
+        }?.status ?? word.status
+
+        if currentStatus != 1 {
+            updateWordStatus(wordRank: word.wordRank, status: 1, in: targetBook)
+            incrementProgress(for: targetBook)
+        } else if let index = wordList.firstIndex(where: { $0.wordRank == word.wordRank && bookName(for: $0) == targetBook }) {
+            wordList[index].status = 1
+        }
+
+        if recordCorrect {
+            recordCorrectAnswer()
+        }
     }
     
     // MARK: - Learning Timer
@@ -206,23 +313,27 @@ class AppState: ObservableObject {
     
     func recordCorrectAnswer() {
         DatabaseService.shared.recordAnswer(isCorrect: true)
+        DatabaseService.shared.checkLearningAchievements()
         statistics.todayCorrect += 1
         statistics.todayLearned += 1
     }
     
     func recordWrongAnswer(word: Word) {
+        let targetBook = bookName(for: word)
         DatabaseService.shared.recordAnswer(isCorrect: false)
-        DatabaseService.shared.addToWrongBook(word: word, book: currentBook)
+        DatabaseService.shared.addToWrongBook(word: word, book: targetBook)
+        DatabaseService.shared.checkLearningAchievements()
         statistics.todayWrong += 1
     }
     
     // MARK: - Favorites
     
     func toggleFavorite(word: Word) {
+        let targetBook = bookName(for: word)
         let newState = !word.isFavorite
-        DatabaseService.shared.updateFavoriteStatus(wordRank: word.wordRank, isFavorite: newState, in: currentBook)
+        DatabaseService.shared.updateFavoriteStatus(wordRank: word.wordRank, isFavorite: newState, in: targetBook)
         
-        if let index = wordList.firstIndex(where: { $0.wordRank == word.wordRank }) {
+        if let index = wordList.firstIndex(where: { $0.wordRank == word.wordRank && bookName(for: $0) == targetBook }) {
             wordList[index].isFavorite = newState
         }
     }
@@ -282,4 +393,71 @@ enum Page: Hashable {
     case favorites      // 新增：收藏夹
     case statistics     // 新增：统计页面
     case settings       // 新增：设置页面
+}
+
+enum StealthShortcut: String, CaseIterable {
+    case moyuM = "moyu_m"
+    case space = "space"
+    case controlOption = "control_option"
+
+    var displayName: String {
+        switch self {
+        case .moyuM: return "Cmd+Shift+M / Cmd+M"
+        case .space: return "Cmd+Shift+Space / Cmd+Option+Space"
+        case .controlOption: return "Ctrl+Option+M / Ctrl+Option+H"
+        }
+    }
+
+    var wakeLabel: String {
+        switch self {
+        case .moyuM: return "Cmd+Shift+M"
+        case .space: return "Cmd+Shift+Space"
+        case .controlOption: return "Ctrl+Option+M"
+        }
+    }
+
+    var hideLabel: String {
+        switch self {
+        case .moyuM: return "Cmd+M"
+        case .space: return "Cmd+Option+Space"
+        case .controlOption: return "Ctrl+Option+H"
+        }
+    }
+
+    var wakeKey: String {
+        switch self {
+        case .moyuM, .controlOption: return "m"
+        case .space: return " "
+        }
+    }
+
+    var hideKey: String {
+        switch self {
+        case .moyuM: return "m"
+        case .space: return " "
+        case .controlOption: return "h"
+        }
+    }
+
+    var wakeModifiers: NSEvent.ModifierFlags {
+        switch self {
+        case .moyuM, .space: return [.command, .shift]
+        case .controlOption: return [.control, .option]
+        }
+    }
+
+    var hideModifiers: NSEvent.ModifierFlags {
+        switch self {
+        case .moyuM: return [.command]
+        case .space: return [.command, .option]
+        case .controlOption: return [.control, .option]
+        }
+    }
+
+    func matches(chars: String, modifiers: NSEvent.ModifierFlags, wake: Bool) -> Bool {
+        let key = wake ? wakeKey : hideKey
+        let expected = wake ? wakeModifiers : hideModifiers
+        let active = modifiers.intersection([.command, .shift, .option, .control])
+        return chars == key && active == expected
+    }
 }

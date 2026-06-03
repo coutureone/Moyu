@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号 (例如: 1.0.0)'
+        description: '版本号 (例如: 2.1.0)'
         required: true
-        default: '1.0.0'
+        default: '2.1.0'
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
         
     - name: Set version environment variable
       run: |
-        VERSION="${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}"
+        VERSION="${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '2.1.0' }}"
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         
     - name: Make build script executable
@@ -55,15 +55,14 @@ jobs:
       
     - name: Build (Universal Binary)
       env:
-        VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '1.0.0' }}
+        VERSION: ${{ steps.get_version.outputs.version || steps.set_version.outputs.version || '2.1.0' }}
       run: |
-        xcodebuild -project Moyu.xcodeproj -scheme Moyu -configuration Release build
         ./build_dmg.sh
         
     - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: Moyu
+        name: Moyu-${{ env.VERSION }}
         path: build/Moyu-*.dmg
         retention-days: 30
 
@@ -85,10 +84,10 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: artifacts/*.dmg
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref_name }}
+        tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
+        name: Release ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
         body: |
-          ## Moyu 摸鱼背单词 ${{ github.ref_name }}
+          ## Moyu 摸鱼背单词 ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
           
           ### 📦 下载
           
@@ -104,6 +103,10 @@ jobs:
           
           ### ✨ 更新内容
           
+          - 数据管理：清空错词本、清空收藏、重置全部进度、导出/导入学习数据
+          - 词库管理：所有内置词库展示，自定义词库重命名/删除，导入预览和错误提示
+          - macOS 登录项：开机启动现在接入系统 API
+          - 摸鱼模式：透明度、小窗、固定角落、隐藏/唤醒快捷键配置
           - 查看 [CHANGELOG.md](../CHANGELOG.md) 了解详细更新内容
           
         draft: false

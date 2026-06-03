@@ -6,7 +6,7 @@
 set -e
 
 APP_NAME="Moyu"
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-2.1.0}"
 DMG_NAME="${APP_NAME}-${VERSION}"
 BUILD_DIR="build"
 EXPORT_PATH="${BUILD_DIR}/Export"

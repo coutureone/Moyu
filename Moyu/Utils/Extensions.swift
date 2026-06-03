@@ -65,4 +65,99 @@ extension View {
             }
         }
     }
+
+    func moyuCard(_ colorScheme: ColorScheme) -> some View {
+        self
+            .background(MoyuTheme.cardBackground(colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
+                    .stroke(MoyuTheme.border(colorScheme), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.18 : 0.07), radius: 10, y: 4)
+    }
+}
+
+// MARK: - Moyu Theme
+enum MoyuTheme {
+    static let radius: CGFloat = 8
+    static let controlRadius: CGFloat = 6
+    static let primary = Color(hex: "#2563eb")
+    static let accent = Color(hex: "#0f766e")
+    static let danger = Color(hex: "#dc2626")
+    static let warning = Color(hex: "#d97706")
+    static let text = Color(hex: "#1f2937")
+    static let secondaryText = Color(hex: "#64748b")
+
+    static func appBackground(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(hex: "#111827") : Color(hex: "#eef2f6")
+    }
+
+    static func cardBackground(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(hex: "#1f2937") : Color.white
+    }
+
+    static func textColor(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(hex: "#f8fafc") : text
+    }
+
+    static func secondaryTextColor(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(hex: "#94a3b8") : secondaryText
+    }
+
+    static func border(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color(hex: "#d9e2ec")
+    }
+}
+
+// MARK: - Shared Controls
+struct MoyuPrimaryButtonStyle: ButtonStyle {
+    var tone: Color = MoyuTheme.primary
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(minHeight: 34)
+            .padding(.horizontal, 14)
+            .background(tone.opacity(configuration.isPressed ? 0.82 : 1))
+            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+    }
+}
+
+struct MoyuSecondaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+    var tone: Color = MoyuTheme.primary
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(tone)
+            .frame(minHeight: 32)
+            .padding(.horizontal, 12)
+            .background(tone.opacity(configuration.isPressed ? 0.16 : 0.09))
+            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous)
+                    .stroke(colorScheme == .dark ? tone.opacity(0.24) : tone.opacity(0.14), lineWidth: 1)
+            )
+    }
+}
+
+struct MoyuIconButton: View {
+    let systemName: String
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemName)
+                Text(title)
+            }
+        }
+        .buttonStyle(MoyuSecondaryButtonStyle())
+        .onHoverCursor()
+    }
 }

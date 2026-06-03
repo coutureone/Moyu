@@ -34,15 +34,15 @@ struct FavoritesView: View {
     // MARK: - Components
     
     private var backgroundColor: Color {
-        colorScheme == .dark ? Color(hex: "#1a1a2e") : Color(hex: "#d7e1ec")
+        MoyuTheme.appBackground(colorScheme)
     }
     
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "#16213e") : Color.white
+        MoyuTheme.cardBackground(colorScheme)
     }
     
     private var textColor: Color {
-        colorScheme == .dark ? Color.white : Color(hex: "#3d5a80")
+        MoyuTheme.textColor(colorScheme)
     }
     
     private var headerBar: some View {
@@ -77,7 +77,7 @@ struct FavoritesView: View {
     private var wordList: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(favoriteWords, id: \.wordRank) { word in
+                ForEach(favoriteWords, id: \.self) { word in
                     FavoriteWordCard(
                         word: word,
                         isSelected: selectedWord?.wordRank == word.wordRank,
@@ -120,9 +120,8 @@ struct FavoritesView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 32)
-                    .background(Color(hex: "#0077b6"))
-                    .cornerRadius(8)
-                    .shadow(color: .black.opacity(0.1), radius: 3, y: 2)
+                    .background(MoyuTheme.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .onHoverCursor()
@@ -147,7 +146,7 @@ struct FavoritesView: View {
     }
     
     private func removeWord(_ word: Word) {
-        DatabaseService.shared.updateFavoriteStatus(wordRank: word.wordRank, isFavorite: false, in: appState.currentBook)
+        DatabaseService.shared.updateFavoriteStatus(wordRank: word.wordRank, isFavorite: false, in: appState.bookName(for: word))
         loadWords()
     }
     
@@ -155,6 +154,7 @@ struct FavoritesView: View {
         // 将收藏单词设置为学习列表
         appState.wordList = favoriteWords
         appState.currentIndex = 0
+        appState.startLearning()
         appState.currentPage = .remember
     }
 }
@@ -175,7 +175,7 @@ struct FavoriteWordCard: View {
             HStack {
                 Text(word.headWord)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#3d5a80"))
+                    .foregroundColor(MoyuTheme.textColor(colorScheme))
                 
                 if !word.usphone.isEmpty {
                     Text("[\(word.usphone)]")
@@ -244,11 +244,14 @@ struct FavoriteWordCard: View {
         }
         .padding(10)
         .background(
-            (colorScheme == .dark ? Color(hex: "#16213e") : Color.white)
+            MoyuTheme.cardBackground(colorScheme)
                 .opacity(isHovered ? 0.9 : 1)
         )
-        .cornerRadius(8)
-        .shadow(color: .black.opacity(isSelected ? 0.15 : 0.08), radius: isSelected ? 6 : 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
+                .stroke(MoyuTheme.border(colorScheme), lineWidth: 1)
+        )
         .scaleEffect(isHovered ? 1.01 : 1)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onTapGesture(perform: onTap)
@@ -257,4 +260,3 @@ struct FavoriteWordCard: View {
         }
     }
 }
-

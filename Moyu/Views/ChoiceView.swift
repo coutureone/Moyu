@@ -11,6 +11,7 @@ struct ChoiceView: View {
     @State private var filterList: [Word] = []
     @State private var inputText: String = ""
     @State private var inputFeedback: String = ""
+    @State private var keyboardMonitor: Any?
     
     var currentWord: Word? {
         guard currentIndex < filterList.count else { return nil }
@@ -19,21 +20,15 @@ struct ChoiceView: View {
     
     var body: some View {
         ZStack {
-            Group {
-                if colorScheme == .dark {
-                    Color(hex: "#1a1a2e")
-                } else {
-                    Color(hex: "#f1ecec")
-                }
-            }
-            .ignoresSafeArea()
+            MoyuTheme.appBackground(colorScheme)
+                .ignoresSafeArea()
             
             if isComplete {
                 CongratulateView()
             } else if filterList.isEmpty {
                 TooEasyView()
             } else if let word = currentWord {
-                VStack(spacing: 0) {
+                VStack(spacing: 12) {
                     // 进度条：当前题目 / 总题目数
                     if !filterList.isEmpty {
                         VStack(spacing: 4) {
@@ -56,10 +51,8 @@ struct ChoiceView: View {
                         .padding(.horizontal, 10)
                     }
                     
-                    // 问题区域
                     questionView(for: word)
                     
-                    // 答案区域
                     if appState.quizMode == .spelling {
                         VStack(spacing: 8) {
                             TextField("输入英文单词", text: $inputText, onCommit: {
@@ -74,9 +67,10 @@ struct ChoiceView: View {
                                     .foregroundColor(showAnswer ? Color(hex: "#e76f51") : .green)
                             }
                         }
-                        .padding(.horizontal, 10)
+                        .padding(12)
+                        .moyuCard(colorScheme)
                     } else {
-                        HStack(spacing: 5) {
+                        VStack(spacing: 8) {
                             ForEach(Array(answers.enumerated()), id: \.offset) { index, answer in
                                 AnswerButton(
                                     title: answer,
@@ -88,7 +82,6 @@ struct ChoiceView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 10)
                     }
                     
                     // 错误提示
@@ -100,13 +93,17 @@ struct ChoiceView: View {
                             .padding(.horizontal, 10)
                     }
                     
-                    Spacer()
                 }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
             }
         }
         .onAppear {
             setupQuiz()
             setupKeyboardShortcuts()
+        }
+        .onDisappear {
+            removeKeyboardShortcuts()
         }
     }
     
@@ -121,14 +118,15 @@ struct ChoiceView: View {
         }()
         
         return ScrollView(.horizontal, showsIndicators: false) {
-            Text(questionText)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#3d5a80"))
-                .padding(.horizontal, 13)
+            Text(questionText.isEmpty ? word.headWord : questionText)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(MoyuTheme.textColor(colorScheme))
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: 55)
+        .frame(minHeight: 72)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 8)
+        .moyuCard(colorScheme)
     }
     
     private func setupQuiz() {
@@ -146,7 +144,7 @@ struct ChoiceView: View {
         // 获取2个错误答案
         let wrongWords = DatabaseService.shared.getRandomWordsForChoice(
             count: 2,
-            from: appState.currentBook,
+            from: appState.bookName(for: word),
             excluding: word.wordRank
         )
         
@@ -174,8 +172,7 @@ struct ChoiceView: View {
         
         if isCorrect(answer: answer, word: word) {
             // 答对
-            appState.updateWordStatus(wordRank: word.wordRank, status: 1)
-            appState.incrementProgress()
+            appState.markWordLearned(word, recordCorrect: true)
             moveToNext()
         } else {
                 // 答错，显示正确答案
@@ -192,8 +189,7 @@ struct ChoiceView: View {
         guard let word = currentWord else { return }
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.lowercased() == word.headWord.lowercased() {
-            appState.updateWordStatus(wordRank: word.wordRank, status: 1)
-            appState.incrementProgress()
+            appState.markWordLearned(word, recordCorrect: true)
             inputFeedback = "✅ 正确"
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 inputText = ""
@@ -201,6 +197,7 @@ struct ChoiceView: View {
                 moveToNext()
             }
         } else {
+            appState.recordWrongAnswer(word: word)
             inputFeedback = "❌ 正确答案：\(word.headWord)"
             showAnswer = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -242,7 +239,8 @@ struct ChoiceView: View {
     }
     
     private func setupKeyboardShortcuts() {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        guard keyboardMonitor == nil else { return }
+        keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if let characters = event.charactersIgnoringModifiers,
                let num = Int(characters),
                num >= 1 && num <= 3,
@@ -255,6 +253,13 @@ struct ChoiceView: View {
             return event
         }
     }
+
+    private func removeKeyboardShortcuts() {
+        if let keyboardMonitor {
+            NSEvent.removeMonitor(keyboardMonitor)
+            self.keyboardMonitor = nil
+        }
+    }
 }
 
 // MARK: - Answer Button
@@ -265,21 +270,37 @@ struct AnswerButton: View {
     let showAnswer: Bool
     let action: () -> Void
     
+    @Environment(\.colorScheme) var colorScheme
     @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 14))
-                .foregroundColor(buttonTextColor)
-                .padding(.horizontal, 8)
-                .frame(height: 32)
-                .frame(minWidth: 60)
-                .background(buttonBackground)
-                .cornerRadius(5)
-                .shadow(color: .black.opacity(0.1), radius: 5, y: 5)
-                .scaleEffect(isHovered ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isHovered)
+            HStack(spacing: 10) {
+                Text("\(index)")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 22, height: 22)
+                    .background(showAnswer && isCorrect ? Color.green : MoyuTheme.primary)
+                    .clipShape(Circle())
+
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(buttonTextColor)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 42)
+            .background(buttonBackground)
+            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous)
+                    .stroke(showAnswer && isCorrect ? Color.green.opacity(0.35) : Color.clear, lineWidth: 1)
+            )
+            .scaleEffect(isHovered ? 1.01 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -296,14 +317,14 @@ struct AnswerButton: View {
         if showAnswer && isCorrect {
             return .green
         }
-        return isHovered ? Color(hex: "#0077b6") : Color(hex: "#3d5a80")
+        return isHovered ? MoyuTheme.primary : MoyuTheme.textColor(colorScheme)
     }
     
     private var buttonBackground: Color {
         if showAnswer && isCorrect {
             return Color.green.opacity(0.1)
         }
-        return .white
+        return MoyuTheme.cardBackground(colorScheme)
     }
 }
 

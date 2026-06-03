@@ -4,6 +4,7 @@
 
 ## User settings
 xcuserdata/
+Moyu.xcodeproj/project.xcworkspace/
 
 ## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
 *.xcscmblueprint
@@ -137,4 +138,3 @@ env/
 *.sqlite3
 # 保留应用必需的初始数据文件
 !Moyu/Resources/moyu.db
-

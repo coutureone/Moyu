@@ -3,27 +3,37 @@ import SwiftUI
 // MARK: - Home View (首页)
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
     @State private var selectedCount: Int = 20
     @State private var customCount: Int? = nil
     @State private var showError: Bool = false
     @State private var errorMessage: String = ""
 
     var body: some View {
-        VStack(spacing: 12) {
-            // 今日进度
+        VStack(spacing: 14) {
             DailyProgressView()
-                .padding(.top, 8)
-            
-            Text("这次要背多少个？")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#3d5a80"))
-            
-            // 自定义数量（滚轮式，类似闹钟）
-            VStack(spacing: 8) {
-                Text("自定义：\(customCount ?? selectedCount)")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#3d5a80"))
-                
+
+            VStack(spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("本次学习")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                        Text("\(customCount ?? selectedCount) 词")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(MoyuTheme.textColor(colorScheme))
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "timer")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(MoyuTheme.primary)
+                        .frame(width: 38, height: 38)
+                        .background(MoyuTheme.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
+                }
+
                 WheelPicker(
                     selection: Binding(
                         get: { customCount ?? selectedCount },
@@ -31,47 +41,38 @@ struct HomeView: View {
                     ),
                     range: Array(2...100)
                 )
-            }
-            .padding(.top, 6)
-            
-            // 开始按钮
-            Button(action: startLearning) {
-                Text("开始")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#e76f51"))
-                    .frame(width: 100, height: 32)
-                    .background(Color.white)
-                    .cornerRadius(5)
-                    .shadow(color: .black.opacity(0.1), radius: 3, y: 2)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                if hovering {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
+
+                Button(action: startLearning) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "play.fill")
+                        Text("开始学习")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(MoyuPrimaryButtonStyle(tone: MoyuTheme.accent))
+                .onHoverCursor()
             }
+            .padding(14)
+            .moyuCard(colorScheme)
             
-            // 错误提示
             if showError {
-                Text(errorMessage)
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#e76f51"))
+                    .foregroundColor(MoyuTheme.danger)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             
             Spacer()
             
-            // 快捷入口
-            HStack(spacing: 8) {
-                QuickLinkButton(title: "错词本") { appState.currentPage = .wrongBook }
-                QuickLinkButton(title: "收藏夹") { appState.currentPage = .favorites }
-                QuickLinkButton(title: "统计") { appState.currentPage = .statistics }
-                QuickLinkButton(title: "设置") { appState.currentPage = .settings }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                QuickLinkButton(title: "错词本", icon: "book.closed") { appState.currentPage = .wrongBook }
+                QuickLinkButton(title: "收藏夹", icon: "star") { appState.currentPage = .favorites }
+                QuickLinkButton(title: "统计", icon: "chart.bar") { appState.currentPage = .statistics }
+                QuickLinkButton(title: "设置", icon: "slider.horizontal.3") { appState.currentPage = .settings }
             }
-            .padding(.bottom, 8)
         }
-        .padding(.horizontal, 20)
+        .padding(16)
+        .background(MoyuTheme.appBackground(colorScheme))
         .onAppear {
             selectedCount = appState.defaultWordCount
             customCount = nil
@@ -122,41 +123,41 @@ private struct DailyProgressView: View {
     }
     
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             HStack {
-                Text("今日进度")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "#778da9"))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("今日目标")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(MoyuTheme.textColor(colorScheme))
+                    Text("\(appState.statistics.todayLearned)/\(appState.dailyGoal) 词")
+                        .font(.system(size: 11))
+                        .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                }
                 
                 Spacer()
                 
                 if appState.isDailyGoalCompleted {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 11))
-                        Text("已完成!")
-                            .font(.system(size: 11, weight: .medium))
-                    }
+                    Label("已完成", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.green)
                 } else {
-                    Text("\(appState.statistics.todayLearned)/\(appState.dailyGoal)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#0077b6"))
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(MoyuTheme.primary)
                 }
             }
             
-            // 进度条
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(hex: "#e0e7ee"))
+                        .fill(MoyuTheme.border(colorScheme))
                         .frame(height: 8)
                     
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
                             appState.isDailyGoalCompleted
-                                ? LinearGradient(colors: [Color.green, Color(hex: "#2ec4b6")], startPoint: .leading, endPoint: .trailing)
-                                : LinearGradient(colors: [Color(hex: "#0077b6"), Color(hex: "#00b4d8")], startPoint: .leading, endPoint: .trailing)
+                                ? Color.green
+                                : MoyuTheme.primary
                         )
                         .frame(width: geometry.size.width * progress, height: 8)
                         .animation(.easeInOut(duration: 0.3), value: progress)
@@ -164,39 +165,39 @@ private struct DailyProgressView: View {
             }
             .frame(height: 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(colorScheme == .dark ? Color(hex: "#16213e") : Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-        )
+        .padding(14)
+        .moyuCard(colorScheme)
     }
 }
 
 // MARK: - Quick Link Button
 private struct QuickLinkButton: View {
     let title: String
+    let icon: String
     let action: () -> Void
-    
-    @State private var hovering = false
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 12))
-                .foregroundColor(hovering ? Color(hex: "#0077b6") : Color(hex: "#3d5a80"))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.white)
-                .cornerRadius(6)
-                .shadow(color: .black.opacity(0.08), radius: 3, y: 2)
+            HStack(spacing: 7) {
+                Image(systemName: icon)
+                    .frame(width: 16)
+                Text(title)
+                Spacer()
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(MoyuTheme.textColor(colorScheme))
+            .padding(.horizontal, 10)
+            .frame(height: 34)
+            .background(MoyuTheme.cardBackground(colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous)
+                    .stroke(MoyuTheme.border(colorScheme), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            self.hovering = hovering
-            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
-        }
+        .onHoverCursor()
     }
 }
 
@@ -227,18 +228,17 @@ private struct WheelPicker: View {
                 }
                 .padding(.vertical, 18)
             }
-            .frame(width: 160, height: 130)
+            .frame(width: 170, height: 118)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.white.opacity(0.9))
-                    .shadow(color: .black.opacity(0.05), radius: 6, y: 3)
+                RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
+                    .fill(Color.white.opacity(0.8))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
                     .stroke(Color(hex: "#d0d7e2"), lineWidth: 1)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous)
                     .fill(Color.white.opacity(0.7))
                     .frame(height: 36)
                     .padding(.horizontal, 6)

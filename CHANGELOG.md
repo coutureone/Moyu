@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-06-03
+
+### Added
+- 数据管理补全：支持清空错词本、清空收藏、重置全部学习进度、导出/导入学习数据。
+- 词库管理补全：设置页展示所有内置词库，支持自定义词库重命名、删除、导入预览和导入错误提示。
+- 开机启动接入 macOS 登录项 API，菜单开关会真正注册/取消登录启动。
+- 摸鱼模式增强：支持小窗模式、窗口透明度、固定右上角、隐藏/唤醒快捷键配置。
+
+### Changed
+- 设置页重新整合数据管理、词库管理和摸鱼模式配置，功能入口更集中。
+- 自定义词库导入支持更稳健的 CSV 解析和 JSON 字段兼容。
+
+### Fixed
+- 修复“跟随系统”主题切换点击不生效的问题。
+- 修复学习进度可能超过词库总数的问题。
+- 修复自定义词库删除时相关错词、收藏、进度残留的问题。
+- 修复文件选择器使用已弃用 API 的构建警告。
+
 ## [1.2.0] - 2026-01-10
 
 ### Added
@@ -57,8 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复图标白色边框问题（使用 PNG 格式和透明通道）
 - 修复 Gatekeeper 阻止问题（添加安装说明）
 
-[Unreleased]: https://github.com/Charliecheung2/toastfish-mac/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/Charliecheung2/toastfish-mac/releases/tag/v1.1.0
-[1.0.0]: https://github.com/Charliecheung2/toastfish-mac/releases/tag/v1.0.0
-
-
+[Unreleased]: https://github.com/coutureone/Moyu/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/coutureone/Moyu/compare/v2.0.2...v2.1.0
+[1.2.0]: https://github.com/coutureone/Moyu/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/coutureone/Moyu/releases/tag/v1.1.0
+[1.0.0]: https://github.com/coutureone/Moyu/releases/tag/v1.0.0

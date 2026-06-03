@@ -4,7 +4,9 @@ import AVFoundation
 // MARK: - Remember View (记忆页面)
 struct RememberView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
     @State private var synthesizer = AVSpeechSynthesizer()
+    @State private var keyboardMonitor: Any?
     
     var currentWord: Word? {
         guard appState.currentIndex < appState.wordList.count else { return nil }
@@ -12,7 +14,7 @@ struct RememberView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 10) {
             // 进度条
             if !appState.wordList.isEmpty {
                 VStack(spacing: 4) {
@@ -31,10 +33,11 @@ struct RememberView: View {
             }
 
             if let word = currentWord {
+                let bookName = appState.bookName(for: word)
                 // 根据词书类型显示不同内容
-                if appState.currentBook == "Goin" {
+                if bookName == "Goin" {
                     GoinRememberContent(word: word, onAction: handleAction, onSpeak: speakWord, onFavorite: toggleFavorite)
-                } else if appState.currentBook == "StdJp_Mid" {
+                } else if bookName == "StdJp_Mid" {
                     JapaneseRememberContent(word: word, onAction: handleAction, onSpeak: speakJapanese, onFavorite: toggleFavorite)
                 } else {
                     EnglishRememberContent(word: word, onAction: handleAction, onSpeak: speakWord, onFavorite: toggleFavorite)
@@ -44,13 +47,20 @@ struct RememberView: View {
                     .foregroundColor(Color(hex: "#3d5a80"))
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
+        .background(MoyuTheme.appBackground(colorScheme))
         .onAppear {
             setupKeyboardShortcuts()
+        }
+        .onDisappear {
+            removeKeyboardShortcuts()
         }
     }
     
     private func setupKeyboardShortcuts() {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        guard keyboardMonitor == nil else { return }
+        keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if let characters = event.charactersIgnoringModifiers {
                 switch characters {
                 case "1":
@@ -72,6 +82,13 @@ struct RememberView: View {
             return event
         }
     }
+
+    private func removeKeyboardShortcuts() {
+        if let keyboardMonitor {
+            NSEvent.removeMonitor(keyboardMonitor)
+            self.keyboardMonitor = nil
+        }
+    }
     
     private func toggleFavorite() {
         guard let word = currentWord else { return }
@@ -80,8 +97,7 @@ struct RememberView: View {
     
     private func handleAction(tooEasy: Bool) {
         if tooEasy, let word = currentWord {
-            appState.updateWordStatus(wordRank: word.wordRank, status: 1)
-            appState.incrementProgress()
+            appState.markWordLearned(word, recordCorrect: true)
         }
         
         if appState.currentIndex >= appState.wordList.count - 1 {
@@ -115,74 +131,80 @@ struct EnglishRememberContent: View {
     let onAction: (Bool) -> Void
     let onSpeak: () -> Void
     let onFavorite: () -> Void
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack(spacing: 0) {
-            // 单词信息
-            VStack(alignment: .leading, spacing: 2) {
-                // 单词和音标
-                HStack(alignment: .firstTextBaseline, spacing: 20) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+        VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(word.headWord)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(Color(hex: "#3d5a80"))
-                        
-                        // 收藏星标
-                        Button(action: onFavorite) {
-                            Image(systemName: word.isFavorite ? "star.fill" : "star")
-                                .font(.system(size: 13))
-                                .foregroundColor(word.isFavorite ? Color(hex: "#f4a261") : Color(hex: "#adb5bd"))
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(MoyuTheme.textColor(colorScheme))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.72)
+
+                        if !word.usphone.isEmpty {
+                            Text("[\(word.usphone)]")
+                                .font(.system(size: 13, weight: .medium).italic())
+                                .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
                         }
-                        .buttonStyle(.plain)
                     }
-                    
-                    Text("[\(word.usphone)]")
-                        .font(.system(size: 12, weight: .light).italic())
-                        .foregroundColor(Color(hex: "#3d5a80"))
+
+                    Spacer()
+
+                    Button(action: onFavorite) {
+                        Image(systemName: word.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(word.isFavorite ? MoyuTheme.warning : MoyuTheme.secondaryTextColor(colorScheme))
+                            .frame(width: 32, height: 32)
+                            .background((word.isFavorite ? MoyuTheme.warning : MoyuTheme.secondaryTextColor(colorScheme)).opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .onHoverCursor()
                 }
                 
-                // 中文释义
                 Text(word.tranCN)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#3d5a80"))
-                    .lineLimit(1)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(MoyuTheme.textColor(colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
                 
-                // 例句
                 if !word.phrase.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(word.phrase)
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "#778da9"))
-                            .lineLimit(1)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(word.phraseCN)
                             .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "#778da9"))
-                            .lineLimit(1)
+                            .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    .padding(10)
+                    .background(MoyuTheme.primary.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            
+            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .moyuCard(colorScheme)
+
             Spacer()
             
-            // 操作按钮
-            HStack(spacing: 15) {
-                ActionButton(title: "记住了", color: Color(hex: "#3d5a80")) {
+            HStack(spacing: 8) {
+                ActionButton(title: "记住了", icon: "checkmark") {
                     onAction(false)
                 }
                 
-                ActionButton(title: "太简单", color: Color(hex: "#3d5a80")) {
+                ActionButton(title: "太简单", icon: "bolt.fill", tone: MoyuTheme.warning) {
                     onAction(true)
                 }
                 
-                ActionButton(title: "发音", color: Color(hex: "#3d5a80")) {
+                ActionButton(title: "发音", icon: "speaker.wave.2", tone: MoyuTheme.primary) {
                     onSpeak()
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 10)
         }
     }
 }
@@ -193,47 +215,53 @@ struct GoinRememberContent: View {
     let onAction: (Bool) -> Void
     let onSpeak: () -> Void
     let onFavorite: () -> Void
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack(spacing: 5) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text("平假名：[\(word.hiragana ?? "")]")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "#3d5a80"))
+        VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(word.hiragana ?? "")
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundColor(MoyuTheme.textColor(colorScheme))
+                        Text("片假名 \(word.katakana ?? "")")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                        Text("罗马音 \(word.romaji ?? "")")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(MoyuTheme.secondaryTextColor(colorScheme))
+                    }
+
+                    Spacer()
                     
                     Button(action: onFavorite) {
                         Image(systemName: word.isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 13))
-                            .foregroundColor(word.isFavorite ? Color(hex: "#f4a261") : Color(hex: "#adb5bd"))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(word.isFavorite ? MoyuTheme.warning : MoyuTheme.secondaryTextColor(colorScheme))
+                            .frame(width: 32, height: 32)
+                            .background((word.isFavorite ? MoyuTheme.warning : MoyuTheme.secondaryTextColor(colorScheme)).opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.controlRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .onHoverCursor()
                 }
-                
-                Text("片假名：[\(word.katakana ?? "")]")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "#3d5a80"))
-                
-                Text("罗马音：[\(word.romaji ?? "")]")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "#3d5a80"))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
+            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .moyuCard(colorScheme)
             
             Spacer()
             
-            HStack(spacing: 20) {
-                ActionButton(title: "记住了", color: Color(hex: "#3d5a80")) {
+            HStack(spacing: 8) {
+                ActionButton(title: "记住了", icon: "checkmark") {
                     onAction(false)
                 }
                 
-                ActionButton(title: "发音", color: Color(hex: "#3d5a80")) {
+                ActionButton(title: "发音", icon: "speaker.wave.2", tone: MoyuTheme.primary) {
                     onSpeak()
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 10)
         }
     }
 }
@@ -253,32 +281,20 @@ struct JapaneseRememberContent: View {
 // MARK: - Action Button
 struct ActionButton: View {
     let title: String
-    let color: Color
+    let icon: String
+    var tone: Color = MoyuTheme.accent
     let action: () -> Void
-    
-    @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 14))
-                .foregroundColor(isHovered ? Color(hex: "#0077b6") : color)
-                .frame(width: 80, height: 32)
-                .background(Color.white)
-                .cornerRadius(5)
-                .shadow(color: .black.opacity(0.1), radius: 5, y: 5)
-                .scaleEffect(isHovered ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isHovered)
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                Text(title)
             }
+            .frame(maxWidth: .infinity)
         }
+        .buttonStyle(MoyuSecondaryButtonStyle(tone: tone))
+        .onHoverCursor()
     }
 }
 

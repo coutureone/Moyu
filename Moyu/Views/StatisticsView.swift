@@ -38,19 +38,19 @@ struct StatisticsView: View {
     // MARK: - Components
     
     private var backgroundColor: Color {
-        colorScheme == .dark ? Color(hex: "#1a1a2e") : Color(hex: "#d7e1ec")
+        MoyuTheme.appBackground(colorScheme)
     }
     
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "#16213e") : Color.white
+        MoyuTheme.cardBackground(colorScheme)
     }
     
     private var textColor: Color {
-        colorScheme == .dark ? Color.white : Color(hex: "#3d5a80")
+        MoyuTheme.textColor(colorScheme)
     }
     
     private var secondaryTextColor: Color {
-        colorScheme == .dark ? Color.gray : Color(hex: "#778da9")
+        MoyuTheme.secondaryTextColor(colorScheme)
     }
     
     private var headerStatsCard: some View {
@@ -123,9 +123,7 @@ struct StatisticsView: View {
             }
         }
         .padding(12)
-        .background(cardBackground)
-        .cornerRadius(10)
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .moyuCard(colorScheme)
     }
     
     private var weeklyChartCard: some View {
@@ -168,9 +166,7 @@ struct StatisticsView: View {
             }
         }
         .padding(12)
-        .background(cardBackground)
-        .cornerRadius(10)
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .moyuCard(colorScheme)
     }
     
     private var achievementsCard: some View {
@@ -192,9 +188,7 @@ struct StatisticsView: View {
             }
         }
         .padding(12)
-        .background(cardBackground)
-        .cornerRadius(10)
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .moyuCard(colorScheme)
     }
     
     private var backButton: some View {
@@ -267,9 +261,12 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(colorScheme == .dark ? Color(hex: "#16213e") : Color.white)
-        .cornerRadius(10)
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .background(MoyuTheme.cardBackground(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
+                .stroke(MoyuTheme.border(colorScheme), lineWidth: 1)
+        )
     }
 }
 
@@ -350,4 +347,3 @@ struct SimpleBarChart: View {
         return formatter.string(from: date)
     }
 }
-

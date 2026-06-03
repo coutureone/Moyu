@@ -112,6 +112,15 @@ struct Achievement: Identifiable {
     var unlockedDate: Date?
 }
 
+// MARK: - Book Info (词库信息)
+struct BookInfo: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let current: Int
+    let total: Int
+    let isCustom: Bool
+}
+
 // MARK: - Theme (主题模型)
 enum AppTheme: String, CaseIterable {
     case system = "system"
@@ -123,6 +132,14 @@ enum AppTheme: String, CaseIterable {
         case .system: return "跟随系统"
         case .light: return "浅色模式"
         case .dark: return "深色模式"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .system: return "circle.lefthalf.filled"
+        case .light: return "sun.max"
+        case .dark: return "moon"
         }
     }
 }

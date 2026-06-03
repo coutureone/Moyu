@@ -1,5 +1,7 @@
 import SwiftUI
 import AppKit
+import ServiceManagement
+import UniformTypeIdentifiers
 
 @main
 struct MoyuApp: App {
@@ -10,7 +12,7 @@ struct MoyuApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
-                .background(Color(hex: "#d7e1ec"))
+                .background(MoyuTheme.appBackground(.light))
         }
         .windowStyle(.hiddenTitleBar)
         // 允许用户调整窗口大小
@@ -45,10 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusBar()
         setupGlobalShortcuts()
         
-        // 设置开机启动
-        if UserDefaults.standard.bool(forKey: "launchAtLogin") {
-            // 开机启动逻辑
-        }
+        UserDefaults.standard.set(SMAppService.mainApp.status == .enabled, forKey: "launchAtLogin")
         
         // 隐藏 Dock 图标（可选）
         // NSApp.setActivationPolicy(.accessory)
@@ -198,7 +197,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 开机启动
         let launchItem = NSMenuItem(title: "开机启动", action: #selector(toggleLaunchAtLogin(_:)), keyEquivalent: "")
         launchItem.target = self
-        launchItem.state = UserDefaults.standard.bool(forKey: "launchAtLogin") ? .on : .off
+        launchItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(launchItem)
         
         // 使用说明
@@ -216,7 +215,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func setupGlobalShortcuts() {
-        // Cmd+Shift+M 唤醒窗口，Cmd+M 关闭窗口
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleGlobalKey(event: event)
         }
@@ -228,20 +226,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func handleGlobalKey(event: NSEvent) {
         guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return }
-        
-        // 关闭窗口：Cmd+M
-        if event.modifierFlags.contains(.command),
-           !event.modifierFlags.contains(.shift),
-           chars == "m" {
+
+        let shortcut = AppState.shared.stealthShortcut
+        if shortcut.matches(chars: chars, modifiers: event.modifierFlags, wake: false) {
             if let window = NSApplication.shared.mainWindow {
                 window.close()
             }
             return
         }
-        
-        // 唤醒窗口：Cmd+Shift+M
-        if event.modifierFlags.contains([.command, .shift]),
-           chars == "m" {
+
+        if shortcut.matches(chars: chars, modifiers: event.modifierFlags, wake: true) {
             showMainWindow()
         }
     }
@@ -250,7 +244,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func importCustomBook() {
         let panel = NSOpenPanel()
         panel.title = "选择自定义词库文件"
-        panel.allowedFileTypes = ["csv", "json"]
+        panel.allowedContentTypes = [.commaSeparatedText, .json]
         panel.allowsMultipleSelection = false
         
         let response = panel.runModal()
@@ -259,63 +253,80 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let data = try Data(contentsOf: url)
             let ext = url.pathExtension.lowercased()
-            let words: [WordImport]
+            let result: WordImportParseResult
             if ext == "json" {
-                words = try parseJSONWordList(data: data)
+                result = try parseJSONWordList(data: data)
             } else {
                 let content = String(data: data, encoding: .utf8) ?? ""
-                words = parseCSVWordList(csv: content)
+                result = parseCSVWordList(csv: content)
             }
             
-            guard !words.isEmpty else {
-                showAlert(title: "导入失败", message: "未解析到词条，请检查文件格式")
+            guard !result.words.isEmpty else {
+                showAlert(title: "导入失败", message: result.errors.prefix(5).joined(separator: "\n").isEmpty ? "未解析到词条，请检查文件格式" : result.errors.prefix(5).joined(separator: "\n"))
                 return
             }
             
             let fileName = url.deletingPathExtension().lastPathComponent
-            let bookId = "custom_\(fileName.replacingOccurrences(of: " ", with: "_"))"
+            let bookId = makeCustomBookId(from: fileName)
+
+            guard confirmImport(fileName: fileName, result: result) else { return }
             
             DatabaseService.shared.importCustomBook(
                 bookName: bookId,
                 displayName: fileName,
-                words: words
+                words: result.words
             )
             
             // 更新当前词库为新导入的
-            AppState.shared.currentBook = bookId
-            DatabaseService.shared.updateCurrentBook(bookId)
+            AppState.shared.setCurrentBook(bookId)
             
             // 重新构建菜单以刷新显示
             setupStatusBar()
             
-            showAlert(title: "导入成功", message: "已导入 \(words.count) 条词汇")
+            showAlert(title: "导入成功", message: "已导入 \(result.words.count) 条词汇")
         } catch {
             showAlert(title: "导入失败", message: error.localizedDescription)
         }
     }
     
-    private func parseJSONWordList(data: Data) throws -> [WordImport] {
+    private func parseJSONWordList(data: Data) throws -> WordImportParseResult {
         // 预期格式：数组对象，每项含 headWord, tranCN, usphone?, phrase?, phraseCN?
+        var errors: [String] = []
         if let arr = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            return arr.compactMap { dict in
+            let words = arr.enumerated().compactMap { index, dict -> WordImport? in
                 guard let head = dict["headWord"] as? String ?? dict["word"] as? String,
-                      let tran = dict["tranCN"] as? String ?? dict["meaning"] as? String else { return nil }
+                      let tran = dict["tranCN"] as? String ?? dict["meaning"] as? String else {
+                    errors.append("第 \(index + 1) 条缺少 word/headWord 或 meaning/tranCN")
+                    return nil
+                }
                 let usphone = dict["usphone"] as? String ?? ""
                 let phrase = dict["phrase"] as? String ?? ""
                 let phraseCN = dict["phraseCN"] as? String ?? ""
                 return WordImport(headWord: head, tranCN: tran, usphone: usphone, phrase: phrase, phraseCN: phraseCN)
             }
+            return WordImportParseResult(words: words, errors: errors)
         }
-        return []
+        return WordImportParseResult(words: [], errors: ["JSON 顶层必须是数组"])
     }
     
-    private func parseCSVWordList(csv: String) -> [WordImport] {
-        // 简单按行逗号分隔，列顺序：headWord, tranCN, usphone?, phrase?, phraseCN?
+    private func parseCSVWordList(csv: String) -> WordImportParseResult {
+        // 列顺序：headWord, tranCN, usphone?, phrase?, phraseCN?
         let lines = csv.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         var result: [WordImport] = []
-        for line in lines {
-            let cols = line.split(separator: ",", omittingEmptySubsequences: false).map { String($0).trimmingCharacters(in: .whitespaces) }
-            guard cols.count >= 2 else { continue }
+        var errors: [String] = []
+
+        for (lineIndex, line) in lines.enumerated() {
+            let cols = parseCSVLine(line)
+            if lineIndex == 0,
+               let first = cols.first?.lowercased(),
+               ["word", "headword", "单词"].contains(first) {
+                continue
+            }
+
+            guard cols.count >= 2 else {
+                errors.append("第 \(lineIndex + 1) 行列数不足")
+                continue
+            }
             let head = cols[0]
             let tran = cols[1]
             let usphone = cols.count > 2 ? cols[2] : ""
@@ -323,9 +334,69 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let phraseCN = cols.count > 4 ? cols[4] : ""
             if !head.isEmpty, !tran.isEmpty {
                 result.append(WordImport(headWord: head, tranCN: tran, usphone: usphone, phrase: phrase, phraseCN: phraseCN))
+            } else {
+                errors.append("第 \(lineIndex + 1) 行单词或释义为空")
             }
         }
-        return result
+        return WordImportParseResult(words: result, errors: errors)
+    }
+
+    private func parseCSVLine(_ line: String) -> [String] {
+        var columns: [String] = []
+        var current = ""
+        var inQuotes = false
+        var iterator = line.makeIterator()
+
+        while let char = iterator.next() {
+            if char == "\"" {
+                if inQuotes, let next = iterator.next() {
+                    if next == "\"" {
+                        current.append("\"")
+                    } else {
+                        inQuotes = false
+                        if next == "," {
+                            columns.append(current.trimmingCharacters(in: .whitespaces))
+                            current = ""
+                        } else {
+                            current.append(next)
+                        }
+                    }
+                } else {
+                    inQuotes.toggle()
+                }
+            } else if char == "," && !inQuotes {
+                columns.append(current.trimmingCharacters(in: .whitespaces))
+                current = ""
+            } else {
+                current.append(char)
+            }
+        }
+
+        columns.append(current.trimmingCharacters(in: .whitespaces))
+        return columns
+    }
+
+    private func makeCustomBookId(from fileName: String) -> String {
+        let safe = fileName.unicodeScalars.map { scalar -> Character in
+            CharacterSet.alphanumerics.contains(scalar) ? Character(scalar) : "_"
+        }
+        let id = String(safe).trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        return "custom_\(id.isEmpty ? UUID().uuidString.replacingOccurrences(of: "-", with: "_") : id)"
+    }
+
+    private func confirmImport(fileName: String, result: WordImportParseResult) -> Bool {
+        let preview = result.words.prefix(5)
+            .map { "\($0.headWord) - \($0.tranCN)" }
+            .joined(separator: "\n")
+        let errorText = result.errors.isEmpty ? "" : "\n\n跳过 \(result.errors.count) 行：\n\(result.errors.prefix(3).joined(separator: "\n"))"
+
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = "导入「\(fileName)」？"
+        alert.informativeText = "将导入 \(result.words.count) 条词汇。\n\n预览：\n\(preview)\(errorText)"
+        alert.addButton(withTitle: "导入")
+        alert.addButton(withTitle: "取消")
+        return alert.runModal() == .alertFirstButtonReturn
     }
     
     private func showAlert(title: String, message: String) {
@@ -346,8 +417,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         // 获取保存的窗口尺寸
-        let savedWidth = AppState.shared.windowWidth
-        let savedHeight = AppState.shared.windowHeight
+        let savedWidth = AppState.shared.compactMode ? 340 : AppState.shared.windowWidth
+        let savedHeight = AppState.shared.compactMode ? 240 : AppState.shared.windowHeight
         
         // 创建新窗口（可调整尺寸）
         let contentView = ContentView().environmentObject(AppState.shared)
@@ -361,13 +432,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: contentView)
         window.level = .floating
-        window.backgroundColor = NSColor(hex: "#d7e1ec")
+        window.backgroundColor = NSColor(hex: "#eef2f6")
         window.setContentSize(NSSize(width: savedWidth, height: savedHeight))
-        window.minSize = NSSize(width: 320, height: 200)
-        window.maxSize = NSSize(width: 600, height: 500)
+        window.minSize = NSSize(width: 340, height: 240)
+        window.maxSize = NSSize(width: 640, height: 560)
+        window.alphaValue = min(max(AppState.shared.windowOpacity, 0.35), 1.0)
         
         // 定位到屏幕右上角
-        if let screen = NSScreen.main {
+        if AppState.shared.pinToCorner, let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let x = screenRect.maxX - window.frame.width
             let y = screenRect.maxY - window.frame.height
@@ -393,8 +465,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func setWordCount(_ sender: NSMenuItem) {
-        AppState.shared.defaultWordCount = sender.tag
-        UserDefaults.standard.set(sender.tag, forKey: "defaultWordCount")
+        AppState.shared.setDefaultWordCount(sender.tag)
         
         // 更新菜单状态
         if let menu = sender.menu {
@@ -406,8 +477,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func selectBook(_ sender: NSMenuItem) {
         if let bookId = sender.representedObject as? String {
-            AppState.shared.currentBook = bookId
-            DatabaseService.shared.updateCurrentBook(bookId)
+            AppState.shared.setCurrentBook(bookId)
             
             // 更新菜单状态
             if let menu = sender.menu {
@@ -420,9 +490,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func toggleLaunchAtLogin(_ sender: NSMenuItem) {
         let newState = sender.state == .off
-        sender.state = newState ? .on : .off
-        UserDefaults.standard.set(newState, forKey: "launchAtLogin")
-        // 实际的开机启动需要使用 SMLoginItemSetEnabled 或 LaunchAtLogin 库
+        do {
+            if newState {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            sender.state = newState ? .on : .off
+            UserDefaults.standard.set(newState, forKey: "launchAtLogin")
+        } catch {
+            showAlert(title: "开机启动设置失败", message: error.localizedDescription)
+        }
     }
     
     @objc func openHelp() {
@@ -430,4 +508,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSWorkspace.shared.open(url)
         }
     }
+}
+
+private struct WordImportParseResult {
+    let words: [WordImport]
+    let errors: [String]
 }

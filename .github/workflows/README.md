@@ -20,10 +20,10 @@
 
 ```bash
 # 1. 更新版本号
-git tag v1.0.0
+git tag v2.1.0
 
 # 2. 推送 tag
-git push origin v1.0.0
+git push origin v2.1.0
 ```
 
 推送 tag 后，GitHub Actions 会自动：
@@ -36,7 +36,7 @@ git push origin v1.0.0
 1. 前往 GitHub 仓库的 Actions 页面
 2. 选择 "Build and Release" workflow
 3. 点击 "Run workflow"
-4. 输入版本号（例如：1.0.0）
+4. 输入版本号（例如：2.1.0）
 5. 点击 "Run workflow"
 
 ## 🔨 Build (`build.yml`)
@@ -68,5 +68,3 @@ git push origin v1.0.0
 如果需要修改构建配置，可以编辑对应的 workflow 文件：
 - `.github/workflows/build-and-release.yml` - Release 构建
 - `.github/workflows/build.yml` - 普通构建
-
-

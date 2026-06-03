@@ -17,14 +17,15 @@
 ## ✨ Features
 
 - 🚀 **Native Swift + SwiftUI** - Lightweight and fast
-- 📚 **Rich Word Banks + Custom Banks** - Supports CET-4/6, Graduate, TOEFL, IELTS, GRE, SAT, with CSV/JSON import
+- 📚 **Rich Word Banks + Custom Banks** - Supports CET-4/6, Graduate, TOEFL, IELTS, GRE, SAT and Japanese banks, with CSV/JSON import, preview, rename and delete
 - 🇯🇵 **Japanese Support** - Includes Hiragana, Shinkango vocabulary
 - 🎯 **Efficient Learning** - Memory mode + Multiple choice tests with progress bar
 - ⭐ **Favorites & Wrong Book** - One-click favorite/wrong word marking from memory page
 - 📈 **Statistics Panel** - Today/total correct/wrong counts, streak days, 7-day records, achievements
 - 🎚️ **Custom Quantity** - Clock-style picker for learning quantity
-- 🎨 **Themes & Settings** - Light/dark mode, reminder time, progress reset, data management
-- ⌨️ **Keyboard Shortcuts** - Number keys for answers, ESC/Cmd+Q to quit, hotkey wake-up
+- 🎨 **Themes & Settings** - System/light/dark mode, reminders, progress reset, data import/export
+- 🫥 **Stealth Mode** - Opacity, compact window, corner pinning, one-key hide and configurable wake-up shortcuts
+- ⌨️ **Keyboard Shortcuts** - Number keys for answers, ESC/Cmd+Q to quit, configurable hide/wake hotkeys
 - 🔊 **Pronunciation** - System TTS reading
 - 📊 **Progress Tracking** - SQLite local storage
 - 🖥️ **Status Bar Tray** - Discreet operation, start anytime
@@ -86,7 +87,7 @@ chmod +x build_dmg.sh
 | Wrong Book | View wrong words, practice or remove |
 | Favorites | View favorites, practice or remove |
 | Statistics | Today/total, correct/wrong, streak days, 7-day records, achievements |
-| Settings | Theme, reminder time, progress reset, data management, custom word import |
+| Settings | Theme, reminders, progress reset, data import/export, word bank management, stealth mode |
 
 ---
 

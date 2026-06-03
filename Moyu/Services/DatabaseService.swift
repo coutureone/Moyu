@@ -59,6 +59,22 @@ class DatabaseService {
         }
     }
 
+    private func escapeSQL(_ value: String) -> String {
+        value.replacingOccurrences(of: "'", with: "''")
+    }
+
+    private func isSafeSQLIdentifier(_ value: String) -> Bool {
+        let pattern = #"^[A-Za-z_][A-Za-z0-9_]*$"#
+        return value.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    private func closeDatabase() {
+        if db != nil {
+            sqlite3_close(db)
+            db = nil
+        }
+    }
+
     /// 检查表中是否已存在指定列，避免重复 ALTER TABLE 报错
     private func columnExists(table: String, column: String) -> Bool {
         let pragmaSQL = "PRAGMA table_info(\(table));"
@@ -277,6 +293,72 @@ class DatabaseService {
         
         return result
     }
+
+    func displayName(for book: String) -> String {
+        let builtInNames: [String: String] = [
+            "CET4_1": "四级核心词汇",
+            "CET4_3": "四级完整词汇",
+            "CET6_1": "六级核心词汇",
+            "CET6_3": "六级完整词汇",
+            "GMAT_3": "GMAT词汇",
+            "GRE_2": "GRE词汇",
+            "IELTS_3": "IELTS词汇",
+            "TOEFL_2": "TOEFL词汇",
+            "SAT_2": "SAT词汇",
+            "KaoYan_1": "考研必备词汇",
+            "KaoYan_2": "考研完整词汇",
+            "Level4_1": "专四真题高频词",
+            "Level4luan_2": "专四核心词汇",
+            "Level8_1": "专八真题高频词",
+            "Level8luan_2": "专八核心词汇",
+            "Goin": "五十音",
+            "StdJp_Mid": "标日中级词汇",
+            "COCA_20000": "COCA常用20000词",
+            "GRE_8000": "GRE 8000词",
+            "TOEFL_Extra": "托福扩展词汇",
+            "NPEE": "考研英语词汇",
+            "CET4_Extra": "四级扩展",
+            "CET6_Extra": "六级扩展"
+        ]
+        if let name = builtInNames[book] {
+            return name
+        }
+        return customBookDisplayName(for: book) ?? book
+    }
+
+    private func customBookDisplayName(for book: String) -> String? {
+        let sql = "SELECT displayName FROM CustomBooks WHERE bookName = '\(escapeSQL(book))' LIMIT 1"
+        var stmt: OpaquePointer?
+        var name: String?
+
+        if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                name = sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+            }
+        }
+        sqlite3_finalize(stmt)
+
+        return name
+    }
+
+    func getAllBooks() -> [BookInfo] {
+        let customIds = Set(getCustomBooks().map { $0.id })
+        let progress = getAllProgress()
+        return progress
+            .map { book, value in
+                BookInfo(
+                    id: book,
+                    name: displayName(for: book),
+                    current: value.current,
+                    total: value.total,
+                    isCustom: customIds.contains(book)
+                )
+            }
+            .sorted {
+                if $0.isCustom != $1.isCustom { return !$0.isCustom }
+                return $0.name.localizedCompare($1.name) == .orderedAscending
+            }
+    }
     
     /// 随机获取指定数量的单词（英语词书）
     func getRandomWords(count: Int, from book: String) -> [Word] {
@@ -447,10 +529,26 @@ class DatabaseService {
         let sql = "UPDATE \(book) SET status = \(status) WHERE wordRank = \(wordRank)"
         executeSQL(sql)
     }
+
+    /// 获取单词当前状态
+    func getWordStatus(wordRank: Int, in book: String) -> Int? {
+        let sql = "SELECT status FROM \(book) WHERE wordRank = \(wordRank) LIMIT 1"
+        var stmt: OpaquePointer?
+        var status: Int?
+
+        if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                status = Int(sqlite3_column_int(stmt, 0))
+            }
+        }
+        sqlite3_finalize(stmt)
+
+        return status
+    }
     
     /// 增加词书进度
     func incrementProgress(for book: String) {
-        let sql = "UPDATE Count SET current = current + 1 WHERE bookName = '\(book)'"
+        let sql = "UPDATE Count SET current = MIN(current + 1, number) WHERE bookName = '\(book)'"
         executeSQL(sql)
     }
     
@@ -463,6 +561,16 @@ class DatabaseService {
         // 重置所有单词状态
         let wordSQL = "UPDATE \(book) SET status = 0"
         executeSQL(wordSQL)
+    }
+
+    func resetAllProgress() {
+        let books = getAllProgress().keys
+        for book in books {
+            resetProgress(for: book)
+        }
+        executeSQL("DELETE FROM Statistics")
+        executeSQL("UPDATE Global SET streakDays = 0, lastLearnDate = NULL")
+        executeSQL("UPDATE Achievements SET isUnlocked = 0, unlockedDate = NULL")
     }
     
     /// 获取词书单词总数
@@ -564,6 +672,25 @@ class DatabaseService {
         sqlite3_finalize(stmt)
         
         return result
+    }
+
+    func renameCustomBook(bookName: String, displayName: String) {
+        let sql = """
+            UPDATE CustomBooks
+            SET displayName = '\(escapeSQL(displayName))'
+            WHERE bookName = '\(escapeSQL(bookName))'
+        """
+        executeSQL(sql)
+    }
+
+    func deleteCustomBook(bookName: String) {
+        guard isSafeSQLIdentifier(bookName) else { return }
+        let escaped = escapeSQL(bookName)
+        executeSQL("DROP TABLE IF EXISTS \(bookName)")
+        executeSQL("DELETE FROM Count WHERE bookName = '\(escaped)'")
+        executeSQL("DELETE FROM CustomBooks WHERE bookName = '\(escaped)'")
+        executeSQL("DELETE FROM WrongBook WHERE bookName = '\(escaped)'")
+        executeSQL("DELETE FROM Favorites WHERE bookName = '\(escaped)'")
     }
     
     // MARK: - Wrong Book (错词本)
@@ -677,6 +804,10 @@ class DatabaseService {
         
         return count
     }
+
+    func clearWrongBook() {
+        executeSQL("DELETE FROM WrongBook")
+    }
     
     // MARK: - Favorites (收藏夹)
     
@@ -788,6 +919,46 @@ class DatabaseService {
         sqlite3_finalize(stmt)
         
         return count
+    }
+
+    func clearFavorites() {
+        executeSQL("DELETE FROM Favorites")
+    }
+
+    // MARK: - Backup / Restore
+
+    func exportDatabase(to url: URL) throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: url.path) {
+            try fileManager.removeItem(at: url)
+        }
+        try fileManager.copyItem(at: URL(fileURLWithPath: dbPath), to: url)
+    }
+
+    func importDatabase(from url: URL) throws {
+        let fileManager = FileManager.default
+        let destination = URL(fileURLWithPath: dbPath)
+        let backup = destination.deletingLastPathComponent()
+            .appendingPathComponent("moyu-backup-\(Int(Date().timeIntervalSince1970)).db")
+
+        closeDatabase()
+
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.copyItem(at: destination, to: backup)
+            try fileManager.removeItem(at: destination)
+        }
+
+        do {
+            try fileManager.copyItem(at: url, to: destination)
+            openDatabase()
+            createNewTables()
+        } catch {
+            if fileManager.fileExists(atPath: backup.path) {
+                try? fileManager.copyItem(at: backup, to: destination)
+            }
+            openDatabase()
+            throw error
+        }
     }
     
     // MARK: - Statistics (学习统计)

@@ -34,15 +34,15 @@ struct WrongBookView: View {
     // MARK: - Components
     
     private var backgroundColor: Color {
-        colorScheme == .dark ? Color(hex: "#1a1a2e") : Color(hex: "#d7e1ec")
+        MoyuTheme.appBackground(colorScheme)
     }
     
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "#16213e") : Color.white
+        MoyuTheme.cardBackground(colorScheme)
     }
     
     private var textColor: Color {
-        colorScheme == .dark ? Color.white : Color(hex: "#3d5a80")
+        MoyuTheme.textColor(colorScheme)
     }
     
     private var headerBar: some View {
@@ -77,7 +77,7 @@ struct WrongBookView: View {
     private var wordList: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(wrongWords, id: \.wordRank) { word in
+                ForEach(wrongWords, id: \.self) { word in
                     WrongWordCard(
                         word: word,
                         isSelected: selectedWord?.wordRank == word.wordRank,
@@ -120,9 +120,8 @@ struct WrongBookView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 32)
-                    .background(Color(hex: "#e76f51"))
-                    .cornerRadius(8)
-                    .shadow(color: .black.opacity(0.1), radius: 3, y: 2)
+                    .background(MoyuTheme.danger)
+                    .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .onHoverCursor()
@@ -147,7 +146,7 @@ struct WrongBookView: View {
     }
     
     private func removeWord(_ word: Word) {
-        DatabaseService.shared.removeFromWrongBook(wordRank: word.wordRank, book: appState.currentBook)
+        DatabaseService.shared.removeFromWrongBook(wordRank: word.wordRank, book: appState.bookName(for: word))
         loadWords()
     }
     
@@ -155,6 +154,7 @@ struct WrongBookView: View {
         // 将错词本单词设置为学习列表
         appState.wordList = wrongWords
         appState.currentIndex = 0
+        appState.startLearning()
         appState.currentPage = .remember
     }
 }
@@ -175,7 +175,7 @@ struct WrongWordCard: View {
             HStack {
                 Text(word.headWord)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#3d5a80"))
+                    .foregroundColor(MoyuTheme.textColor(colorScheme))
                 
                 if !word.usphone.isEmpty {
                     Text("[\(word.usphone)]")
@@ -237,11 +237,14 @@ struct WrongWordCard: View {
         }
         .padding(10)
         .background(
-            (colorScheme == .dark ? Color(hex: "#16213e") : Color.white)
+            MoyuTheme.cardBackground(colorScheme)
                 .opacity(isHovered ? 0.9 : 1)
         )
-        .cornerRadius(8)
-        .shadow(color: .black.opacity(isSelected ? 0.15 : 0.08), radius: isSelected ? 6 : 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: MoyuTheme.radius, style: .continuous)
+                .stroke(MoyuTheme.border(colorScheme), lineWidth: 1)
+        )
         .scaleEffect(isHovered ? 1.01 : 1)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onTapGesture(perform: onTap)
@@ -250,4 +253,3 @@ struct WrongWordCard: View {
         }
     }
 }
-
