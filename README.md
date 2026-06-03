@@ -26,6 +26,8 @@
 
 下载：[Moyu-2.1.0.dmg](https://github.com/coutureone/Moyu/releases/download/v2.1.0/Moyu-2.1.0.dmg)
 
+完整更新日志：[CHANGELOG.md](https://github.com/coutureone/Moyu/blob/main/CHANGELOG.md)
+
 ---
 
 ## ✨ 特性

@@ -107,7 +107,7 @@ jobs:
           - 词库管理：所有内置词库展示，自定义词库重命名/删除，导入预览和错误提示
           - macOS 登录项：开机启动现在接入系统 API
           - 摸鱼模式：透明度、小窗、固定角落、隐藏/唤醒快捷键配置
-          - 查看 [CHANGELOG.md](../CHANGELOG.md) 了解详细更新内容
+          - 查看 [CHANGELOG.md](https://github.com/coutureone/Moyu/blob/main/CHANGELOG.md) 了解详细更新内容
           
         draft: false
         prerelease: false

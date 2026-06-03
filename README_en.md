@@ -26,6 +26,8 @@ This release focuses on settings, word bank management, and stealth-mode improve
 
 Download: [Moyu-2.1.0.dmg](https://github.com/coutureone/Moyu/releases/download/v2.1.0/Moyu-2.1.0.dmg)
 
+Full changelog: [CHANGELOG.md](https://github.com/coutureone/Moyu/blob/main/CHANGELOG.md)
+
 ---
 
 ## ✨ Features
