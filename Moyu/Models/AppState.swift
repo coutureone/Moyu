@@ -393,6 +393,54 @@ enum Page: Hashable {
     case favorites      // 新增：收藏夹
     case statistics     // 新增：统计页面
     case settings       // 新增：设置页面
+    case practiceSession(words: [Word], source: PracticeSource)  // 新增：练习模式
+
+    static func == (lhs: Page, rhs: Page) -> Bool {
+        switch (lhs, rhs) {
+        case (.home, .home),
+             (.remember, .remember),
+             (.choice, .choice),
+             (.congratulate, .congratulate),
+             (.wrongBook, .wrongBook),
+             (.favorites, .favorites),
+             (.statistics, .statistics),
+             (.settings, .settings):
+            return true
+        case (.practiceSession, .practiceSession):
+            return true
+        default:
+            return false
+        }
+    }
+
+    func hash(into hasher: inout Hasher) {
+        switch self {
+        case .home:
+            hasher.combine("home")
+        case .remember:
+            hasher.combine("remember")
+        case .choice:
+            hasher.combine("choice")
+        case .congratulate:
+            hasher.combine("congratulate")
+        case .wrongBook:
+            hasher.combine("wrongBook")
+        case .favorites:
+            hasher.combine("favorites")
+        case .statistics:
+            hasher.combine("statistics")
+        case .settings:
+            hasher.combine("settings")
+        case .practiceSession:
+            hasher.combine("practiceSession")
+        }
+    }
+}
+
+// MARK: - Practice Source Enum
+enum PracticeSource {
+    case wrongBook
+    case favorites
 }
 
 enum StealthShortcut: String, CaseIterable {

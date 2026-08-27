@@ -37,6 +37,11 @@ struct ContentView: View {
                     StatisticsView()
                 case .settings:
                     SettingsView()
+                case .practiceSession(let words, let source):
+                    PracticeSessionView(
+                        words: words,
+                        sourceType: source == .wrongBook ? .wrongBook : .favorites
+                    )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
