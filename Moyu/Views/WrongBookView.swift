@@ -151,11 +151,8 @@ struct WrongBookView: View {
     }
     
     private func startReview() {
-        // 将错词本单词设置为学习列表
-        appState.wordList = wrongWords
-        appState.currentIndex = 0
-        appState.startLearning()
-        appState.currentPage = .remember
+        // 使用新的练习模式
+        appState.currentPage = .practiceSession(words: wrongWords, source: .wrongBook)
     }
 }
 

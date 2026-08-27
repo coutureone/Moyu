@@ -151,11 +151,8 @@ struct FavoritesView: View {
     }
     
     private func startReview() {
-        // 将收藏单词设置为学习列表
-        appState.wordList = favoriteWords
-        appState.currentIndex = 0
-        appState.startLearning()
-        appState.currentPage = .remember
+        // 使用新的练习模式
+        appState.currentPage = .practiceSession(words: favoriteWords, source: .favorites)
     }
 }
 
