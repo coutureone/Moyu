@@ -1275,23 +1275,21 @@ class DatabaseService {
 
     /// 清空所有学习数据
     func clearAllData() {
-        queue.sync {
-            guard let db = db else { return }
+        guard let db = db else { return }
 
-            // 清空学习记录
-            sqlite3_exec(db, "DELETE FROM DailyRecords", nil, nil, nil)
+        // 清空学习记录
+        sqlite3_exec(db, "DELETE FROM DailyRecords", nil, nil, nil)
 
-            // 重置成就
-            sqlite3_exec(db, "UPDATE Achievements SET isUnlocked = 0, unlockedAt = NULL", nil, nil, nil)
+        // 重置成就
+        sqlite3_exec(db, "UPDATE Achievements SET isUnlocked = 0, unlockedAt = NULL", nil, nil, nil)
 
-            // 清空错词本
-            sqlite3_exec(db, "DELETE FROM WrongBook", nil, nil, nil)
+        // 清空错词本
+        sqlite3_exec(db, "DELETE FROM WrongBook", nil, nil, nil)
 
-            // 清空收藏夹
-            sqlite3_exec(db, "DELETE FROM Favorites", nil, nil, nil)
+        // 清空收藏夹
+        sqlite3_exec(db, "DELETE FROM Favorites", nil, nil, nil)
 
-            // 重置单词学习状态
-            sqlite3_exec(db, "UPDATE Words SET lastReviewDate = NULL, reviewCount = 0, correctCount = 0, wrongCount = 0", nil, nil, nil)
-        }
+        // 重置单词学习状态
+        sqlite3_exec(db, "UPDATE Words SET lastReviewDate = NULL, reviewCount = 0, correctCount = 0, wrongCount = 0", nil, nil, nil)
     }
 }

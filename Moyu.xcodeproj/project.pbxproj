@@ -29,6 +29,20 @@
 		014 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115 /* FavoritesView.swift */; };
 		015 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116 /* StatisticsView.swift */; };
 		016 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117 /* SettingsView.swift */; };
+		34C1300C4F1348BA870E9C03 /* ContentViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A372C9B9874E449843B000 /* ContentViewV3.swift */; };
+		53A31D7FA848453498FC3268 /* PronunciationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFAD062312C4276B27A78EA /* PronunciationService.swift */; };
+		5519C7928D9C41DCB6965439 /* SettingsViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF56C51031B4A489E34FFFD /* SettingsViewV3.swift */; };
+		92C834AA714A4AE7B7DDAAC7 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8F1BAF2BF74DBC95E2CB2F /* DesignTokens.swift */; };
+		1FFBF8D27E2445E5B2340D87 /* MoyuButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7E3C706176A4D1E932C0749 /* MoyuButtons.swift */; };
+		9676A759E07E419F8F732560 /* MoyuCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4131FA66893A4232BCC35653 /* MoyuCards.swift */; };
+		CF85373C031C4E2AB04CC104 /* MoyuFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2080D565D84CC9A5CCB3AB /* MoyuFeedback.swift */; };
+		D2D21AB4993E488C82A5F2C5 /* MoyuInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1557EE442C034535AA290008 /* MoyuInputs.swift */; };
+		E5580CD7349B45579AB22661 /* HomeViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EE638A9F6743D3A354E84F /* HomeViewV3.swift */; };
+		849FC9D0772C45BB8F41EC07 /* RememberViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A10A74AF5F4EAFB3491CEB /* RememberViewV3.swift */; };
+		55AEDEEF9CC74D1EB3D122EC /* ChoiceViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE203276A174F1A811B71E9 /* ChoiceViewV3.swift */; };
+		257C692B2A894E14988179EC /* StatisticsViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398657A5F47A4874994598B4 /* StatisticsViewV3.swift */; };
+		6A0E09015DCF4ABD8C85090B /* PracticeSessionViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681495E6385840BDADBBF83A /* PracticeSessionViewV3.swift */; };
+		90DB4AA49D014515A01440D7 /* CollectionsViewV3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98122735C248402AA73ED98B /* CollectionsViewV3.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +70,20 @@
 		115 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		116 /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		117 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		93A372C9B9874E449843B000 /* ContentViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentViewV3.swift; path = Moyu/ContentViewV3.swift; sourceTree = "<group>"; };
+		5AFAD062312C4276B27A78EA /* PronunciationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PronunciationService.swift; path = Moyu/Services/PronunciationService.swift; sourceTree = "<group>"; };
+		7EF56C51031B4A489E34FFFD /* SettingsViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsViewV3.swift; path = Moyu/Features/Settings/SettingsViewV3.swift; sourceTree = "<group>"; };
+		7B8F1BAF2BF74DBC95E2CB2F /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DesignTokens.swift; path = Moyu/Core/DesignSystem/DesignTokens.swift; sourceTree = "<group>"; };
+		C7E3C706176A4D1E932C0749 /* MoyuButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MoyuButtons.swift; path = Moyu/Core/Components/Buttons/MoyuButtons.swift; sourceTree = "<group>"; };
+		4131FA66893A4232BCC35653 /* MoyuCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MoyuCards.swift; path = Moyu/Core/Components/Cards/MoyuCards.swift; sourceTree = "<group>"; };
+		FE2080D565D84CC9A5CCB3AB /* MoyuFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MoyuFeedback.swift; path = Moyu/Core/Components/Feedback/MoyuFeedback.swift; sourceTree = "<group>"; };
+		1557EE442C034535AA290008 /* MoyuInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MoyuInputs.swift; path = Moyu/Core/Components/Inputs/MoyuInputs.swift; sourceTree = "<group>"; };
+		33EE638A9F6743D3A354E84F /* HomeViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HomeViewV3.swift; path = Moyu/Features/Home/HomeViewV3.swift; sourceTree = "<group>"; };
+		07A10A74AF5F4EAFB3491CEB /* RememberViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RememberViewV3.swift; path = Moyu/Features/Learn/RememberViewV3.swift; sourceTree = "<group>"; };
+		ADE203276A174F1A811B71E9 /* ChoiceViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ChoiceViewV3.swift; path = Moyu/Features/Learn/ChoiceViewV3.swift; sourceTree = "<group>"; };
+		398657A5F47A4874994598B4 /* StatisticsViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StatisticsViewV3.swift; path = Moyu/Features/Statistics/StatisticsViewV3.swift; sourceTree = "<group>"; };
+		681495E6385840BDADBBF83A /* PracticeSessionViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PracticeSessionViewV3.swift; path = Moyu/Features/Practice/PracticeSessionViewV3.swift; sourceTree = "<group>"; };
+		98122735C248402AA73ED98B /* CollectionsViewV3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CollectionsViewV3.swift; path = Moyu/Features/Collections/CollectionsViewV3.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -246,7 +274,21 @@
 				014 /* FavoritesView.swift in Sources */,
 				015 /* StatisticsView.swift in Sources */,
 				016 /* SettingsView.swift in Sources */,
-			);
+							34C1300C4F1348BA870E9C03 /* ContentViewV3.swift in Sources */,
+				53A31D7FA848453498FC3268 /* PronunciationService.swift in Sources */,
+				5519C7928D9C41DCB6965439 /* SettingsViewV3.swift in Sources */,
+				92C834AA714A4AE7B7DDAAC7 /* DesignTokens.swift in Sources */,
+				1FFBF8D27E2445E5B2340D87 /* MoyuButtons.swift in Sources */,
+				9676A759E07E419F8F732560 /* MoyuCards.swift in Sources */,
+				CF85373C031C4E2AB04CC104 /* MoyuFeedback.swift in Sources */,
+				D2D21AB4993E488C82A5F2C5 /* MoyuInputs.swift in Sources */,
+				E5580CD7349B45579AB22661 /* HomeViewV3.swift in Sources */,
+				849FC9D0772C45BB8F41EC07 /* RememberViewV3.swift in Sources */,
+				55AEDEEF9CC74D1EB3D122EC /* ChoiceViewV3.swift in Sources */,
+				257C692B2A894E14988179EC /* StatisticsViewV3.swift in Sources */,
+				6A0E09015DCF4ABD8C85090B /* PracticeSessionViewV3.swift in Sources */,
+				90DB4AA49D014515A01440D7 /* CollectionsViewV3.swift in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
