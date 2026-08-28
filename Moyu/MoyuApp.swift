@@ -9,9 +9,8 @@ struct MoyuApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentViewV3()
                 .environmentObject(appState)
-                .background(Color(hex: "#d7e1ec"))
         }
         .windowStyle(.hiddenTitleBar)
         // 允许用户调整窗口大小
@@ -23,13 +22,13 @@ struct MoyuApp: App {
                     NSApplication.shared.orderFrontStandardAboutPanel(
                         options: [
                             NSApplication.AboutPanelOptionKey.applicationName: "Moyu 摸鱼背单词",
-                            NSApplication.AboutPanelOptionKey.applicationVersion: "1.0.0"
+                            NSApplication.AboutPanelOptionKey.applicationVersion: "3.0.0"
                         ]
                     )
                 }
             }
         }
-        
+
         Settings {
             EmptyView()
         }

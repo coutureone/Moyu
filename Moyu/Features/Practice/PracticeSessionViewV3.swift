@@ -5,6 +5,7 @@ import SwiftUI
 struct PracticeSessionViewV3: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
+    @StateObject private var pronunciationService = PronunciationService.shared
 
     let words: [Word]
     let source: PracticeSource
@@ -14,6 +15,7 @@ struct PracticeSessionViewV3: View {
     @State private var rememberedCount = 0
     @State private var forgotCount = 0
     @State private var isComplete = false
+    @AppStorage("autoPlayPronunciation") private var autoPlayPronunciation = false
 
     var currentWord: Word? {
         guard currentIndex < words.count else { return nil }
@@ -41,6 +43,17 @@ struct PracticeSessionViewV3: View {
             }
         }
         .background(DesignTokens.Colors.background(for: colorScheme))
+        .onAppear {
+            setupNotifications()
+            // 自动发音
+            if autoPlayPronunciation, let word = currentWord {
+                playPronunciation(word: word)
+            }
+        }
+        .onDisappear {
+            removeNotifications()
+            pronunciationService.stop()
+        }
     }
 
     // MARK: - Navigation Bar
@@ -126,8 +139,10 @@ struct PracticeSessionViewV3: View {
                             .font(DesignTokens.Typography.h3)
                             .foregroundColor(DesignTokens.Colors.textSecondary(for: colorScheme))
 
-                        Button(action: {}) {
-                            Image(systemName: "speaker.wave.2.fill")
+                        Button(action: {
+                            playPronunciation(word: word)
+                        }) {
+                            Image(systemName: pronunciationService.isPlaying ? "speaker.wave.2.fill" : "speaker.wave.2")
                                 .font(DesignTokens.Typography.h3)
                                 .foregroundColor(DesignTokens.Colors.primary)
                         }
@@ -389,6 +404,58 @@ struct PracticeSessionViewV3: View {
         case .favorites:
             appState.currentPage = .favorites
         }
+    }
+
+    // MARK: - Keyboard Shortcuts
+
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            forName: .showAnswer,
+            object: nil,
+            queue: .main
+        ) { _ in
+            withAnimation(DesignTokens.Animation.spring) {
+                showAnswer = true
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .markRemembered,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard showAnswer, let word = currentWord else { return }
+            markAsRemembered(word: word)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .markForgot,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard showAnswer, let word = currentWord else { return }
+            markAsForgot(word: word)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .playPronunciation,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let word = currentWord else { return }
+            playPronunciation(word: word)
+        }
+    }
+
+    private func removeNotifications() {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Pronunciation
+
+    private func playPronunciation(word: Word) {
+        pronunciationService.loadRateFromSettings()
+        pronunciationService.speak(word: word.word)
     }
 }
 

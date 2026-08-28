@@ -5,9 +5,11 @@ import SwiftUI
 struct RememberViewV3: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
+    @StateObject private var pronunciationService = PronunciationService.shared
 
     @State private var showMeaning = false
     @State private var isExiting = false
+    @AppStorage("autoPlayPronunciation") private var autoPlayPronunciation = false
 
     var currentWord: Word? {
         guard appState.currentIndex < appState.words.count else { return nil }
@@ -36,6 +38,17 @@ struct RememberViewV3: View {
             }
         }
         .background(DesignTokens.Colors.background(for: colorScheme))
+        .onAppear {
+            setupNotifications()
+            // 自动发音
+            if autoPlayPronunciation, let word = currentWord {
+                playPronunciation(word: word)
+            }
+        }
+        .onDisappear {
+            removeNotifications()
+            pronunciationService.stop()
+        }
     }
 
     // MARK: - Navigation Bar
@@ -120,9 +133,9 @@ struct RememberViewV3: View {
 
                     // 发音按钮
                     Button(action: {
-                        // TODO: 播放发音
+                        playPronunciation(word: word)
                     }) {
-                        Image(systemName: "speaker.wave.2.fill")
+                        Image(systemName: pronunciationService.isPlaying ? "speaker.wave.2.fill" : "speaker.wave.2")
                             .font(DesignTokens.Typography.h4)
                             .foregroundColor(DesignTokens.Colors.primary)
                     }
@@ -346,6 +359,67 @@ struct RememberViewV3: View {
 
     private func exitLearning() {
         appState.currentPage = .home
+    }
+
+    // MARK: - Keyboard Shortcuts
+
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            forName: .showAnswer,
+            object: nil,
+            queue: .main
+        ) { _ in
+            withAnimation(DesignTokens.Animation.spring) {
+                showMeaning = true
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .markCorrect,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let word = currentWord else { return }
+            markAsCorrect(word: word)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .markWrong,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let word = currentWord else { return }
+            markAsWrong(word: word)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .playPronunciation,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let word = currentWord else { return }
+            playPronunciation(word: word)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .toggleFavorite,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let word = currentWord else { return }
+            toggleFavorite(word: word)
+        }
+    }
+
+    private func removeNotifications() {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Pronunciation
+
+    private func playPronunciation(word: Word) {
+        pronunciationService.loadRateFromSettings()
+        pronunciationService.speak(word: word.word)
     }
 }
 

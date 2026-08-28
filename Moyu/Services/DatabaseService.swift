@@ -1260,14 +1260,38 @@ class DatabaseService {
         var count = 0
         let sql = "SELECT COUNT(*) FROM Achievements WHERE isUnlocked = 1"
         var stmt: OpaquePointer?
-        
+
         if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
             if sqlite3_step(stmt) == SQLITE_ROW {
                 count = Int(sqlite3_column_int(stmt, 0))
             }
         }
         sqlite3_finalize(stmt)
-        
+
         return count
+    }
+
+    // MARK: - Clear All Data
+
+    /// 清空所有学习数据
+    func clearAllData() {
+        queue.sync {
+            guard let db = db else { return }
+
+            // 清空学习记录
+            sqlite3_exec(db, "DELETE FROM DailyRecords", nil, nil, nil)
+
+            // 重置成就
+            sqlite3_exec(db, "UPDATE Achievements SET isUnlocked = 0, unlockedAt = NULL", nil, nil, nil)
+
+            // 清空错词本
+            sqlite3_exec(db, "DELETE FROM WrongBook", nil, nil, nil)
+
+            // 清空收藏夹
+            sqlite3_exec(db, "DELETE FROM Favorites", nil, nil, nil)
+
+            // 重置单词学习状态
+            sqlite3_exec(db, "UPDATE Words SET lastReviewDate = NULL, reviewCount = 0, correctCount = 0, wrongCount = 0", nil, nil, nil)
+        }
     }
 }
