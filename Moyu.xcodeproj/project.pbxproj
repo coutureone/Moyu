@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7987689A43D545BBF2CE5311 /* ColorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3E9F7B5497C79AF8BE6FEF /* ColorTheme.swift */; };
+		B2E350217013093ED6FF0EB4 /* ViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18A07A05D562BCC5BB141289 /* ViewModifiers.swift */; };
+		3DA0DDC571E55E6498EC7B33 /* SafeSQLBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D0E84F363FC5C5ADE976860 /* SafeSQLBuilder.swift */; };
+		5EDE5880BA3B24084EFA262B /* PracticeSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFCFA2A47D0DD1D0A98B021 /* PracticeSessionView.swift */; };
+		55FF29FCC94A3D5ACD69862D /* EnhancedStatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B740C3D3451AAEA0FD865F6C /* EnhancedStatisticsView.swift */; };
+		2649A236DF87A10C9313FBDC /* SpacedRepetitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FEAF047EFC1473AD6A9770F /* SpacedRepetitionService.swift */; };
 		001 /* MoyuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101 /* MoyuApp.swift */; };
 		002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102 /* AppState.swift */; };
 		003 /* Word.swift in Sources */ = {isa = PBXBuildFile; fileRef = 103 /* Word.swift */; };
@@ -26,6 +32,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3E3E9F7B5497C79AF8BE6FEF /* ColorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTheme.swift; sourceTree = "<group>"; };
+		18A07A05D562BCC5BB141289 /* ViewModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModifiers.swift; sourceTree = "<group>"; };
+		6D0E84F363FC5C5ADE976860 /* SafeSQLBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeSQLBuilder.swift; sourceTree = "<group>"; };
+		ABFCFA2A47D0DD1D0A98B021 /* PracticeSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSessionView.swift; sourceTree = "<group>"; };
+		B740C3D3451AAEA0FD865F6C /* EnhancedStatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedStatisticsView.swift; sourceTree = "<group>"; };
+		9FEAF047EFC1473AD6A9770F /* SpacedRepetitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacedRepetitionService.swift; sourceTree = "<group>"; };
 		100 /* Moyu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Moyu.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		101 /* MoyuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoyuApp.swift; sourceTree = "<group>"; };
 		102 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -99,7 +111,9 @@
 		304 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				105 /* ContentView.swift */,
+								ABFCFA2A47D0DD1D0A98B021 /* PracticeSessionView.swift */,
+				B740C3D3451AAEA0FD865F6C /* EnhancedStatisticsView.swift */,
+105 /* ContentView.swift */,
 				106 /* HomeView.swift */,
 				107 /* RememberView.swift */,
 				108 /* ChoiceView.swift */,
@@ -115,7 +129,8 @@
 		305 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				104 /* DatabaseService.swift */,
+								9FEAF047EFC1473AD6A9770F /* SpacedRepetitionService.swift */,
+104 /* DatabaseService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -123,7 +138,10 @@
 		306 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				110 /* Extensions.swift */,
+								3E3E9F7B5497C79AF8BE6FEF /* ColorTheme.swift */,
+				18A07A05D562BCC5BB141289 /* ViewModifiers.swift */,
+				6D0E84F363FC5C5ADE976860 /* SafeSQLBuilder.swift */,
+110 /* Extensions.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -208,7 +226,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				001 /* MoyuApp.swift in Sources */,
+								7987689A43D545BBF2CE5311 /* ColorTheme.swift in Sources */,
+				B2E350217013093ED6FF0EB4 /* ViewModifiers.swift in Sources */,
+				3DA0DDC571E55E6498EC7B33 /* SafeSQLBuilder.swift in Sources */,
+				5EDE5880BA3B24084EFA262B /* PracticeSessionView.swift in Sources */,
+				55FF29FCC94A3D5ACD69862D /* EnhancedStatisticsView.swift in Sources */,
+				2649A236DF87A10C9313FBDC /* SpacedRepetitionService.swift in Sources */,
+001 /* MoyuApp.swift in Sources */,
 				002 /* AppState.swift in Sources */,
 				003 /* Word.swift in Sources */,
 				004 /* DatabaseService.swift in Sources */,

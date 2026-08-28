@@ -185,7 +185,7 @@ struct EnhancedStatisticsView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 10) {
                     ForEach(achievements, id: \.id) { achievement in
-                        AchievementBadge(achievement: achievement)
+                        EnhancedAchievementBadge(achievement: achievement)
                     }
                 }
             }
@@ -339,8 +339,8 @@ struct WeeklyChart: View {
     }
 }
 
-// MARK: - Achievement Badge
-struct AchievementBadge: View {
+// MARK: - Enhanced Achievement Badge
+struct EnhancedAchievementBadge: View {
     let achievement: Achievement
 
     var body: some View {
